@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Rotas protegidas — redireciona para /login se não autenticado
-  const protectedPaths = ['/', '/culturas', '/talhoes', '/ndvi', '/solo', '/irrigacao', '/pulverizacao', '/calendario', '/relatorios', '/assistente']
+  const protectedPaths = ['/app', '/culturas', '/talhoes', '/ndvi', '/solo', '/irrigacao', '/pulverizacao', '/calendario', '/relatorios', '/assistente']
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith(p + '/'))
 
   if (isProtected && !user && process.env.NEXT_PUBLIC_SUPABASE_URL) {

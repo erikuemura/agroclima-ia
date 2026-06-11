@@ -56,7 +56,7 @@ export default function LoginPage() {
           <div className="w-14 h-14 rounded-2xl bg-green-700 flex items-center justify-center mb-3">
             <Leaf className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-xl font-semibold text-stone-800">AgroClima IA</h1>
+          <h1 className="text-xl font-semibold text-stone-800">CampoClima</h1>
           <p className="text-sm text-stone-400 mt-0.5">Inteligência para o campo</p>
         </div>
 

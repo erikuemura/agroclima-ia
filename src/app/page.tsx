@@ -1,41 +1,370 @@
-import { Suspense } from 'react'
-import { WeatherDashboard } from '@/components/dashboard/WeatherDashboard'
-import { fetchForecast } from '@/lib/weather'
-import { generateAlerts } from '@/lib/ai'
-import { FARM, CROPS } from '@/lib/mock-data'
+import Link from 'next/link'
+import { Leaf, ArrowRight, Play, ShieldCheck, Clock, Smartphone, Brain, Check, Star } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
-
-async function DashboardContent() {
-  const weather = await fetchForecast(FARM.lat, FARM.lon)
-  const alerts = await generateAlerts(weather.current, weather.days, CROPS).catch(() => [])
-  return <WeatherDashboard weather={weather} alerts={alerts} crops={CROPS} farm={FARM} />
-}
-
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent />
-    </Suspense>
-  )
-}
+    <div className="min-h-screen bg-white text-stone-900 font-sans">
+      {/* NAV */}
+      <nav className="flex items-center justify-between px-8 py-4 border-b border-stone-100 sticky top-0 bg-white/95 backdrop-blur z-50">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-green-800 rounded-lg flex items-center justify-center">
+            <Leaf className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-stone-900 leading-none">CampoClima</p>
+            <p className="text-[10px] text-stone-400 leading-none mt-0.5">Inteligência para o campo</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <Link href="#recursos" className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Recursos</Link>
+          <Link href="/precos" className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Preços</Link>
+          <Link href="#depoimentos" className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Depoimentos</Link>
+          <Link href="/login" className="text-sm text-stone-600 border border-stone-200 rounded-lg px-4 py-2 hover:bg-stone-50 transition-colors">Entrar</Link>
+          <Link href="/login" className="text-sm bg-green-800 text-white rounded-lg px-4 py-2 hover:bg-green-900 transition-colors flex items-center gap-1.5">
+            Começar grátis <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </nav>
 
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-6 animate-pulse">
-      <div>
-        <div className="h-6 bg-stone-200 rounded w-48 mb-1" />
-        <div className="h-4 bg-stone-100 rounded w-72" />
-      </div>
-      <div className="grid grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-stone-200 rounded-xl h-24" />
-        ))}
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 bg-stone-200 rounded-xl h-64" />
-        <div className="bg-stone-200 rounded-xl h-64" />
-      </div>
+      {/* HERO */}
+      <section className="px-8 pt-20 pb-0 text-center max-w-4xl mx-auto">
+        <div className="inline-flex items-center gap-2 bg-green-50 text-green-800 text-xs font-medium px-3 py-1.5 rounded-full border border-green-200 mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          IA agrícola para o produtor rural brasileiro
+        </div>
+        <h1 className="text-5xl font-medium text-stone-900 leading-[1.12] mb-5">
+          Sua fazenda mais <span className="text-green-700">inteligente,</span><br />safra após safra
+        </h1>
+        <p className="text-lg text-stone-500 max-w-xl mx-auto mb-8 leading-relaxed">
+          Clima, satélite, solo e culturas reunidos em uma plataforma com IA. Alertas antecipados, análises precisas e decisões melhores — para pequenos e médios produtores.
+        </p>
+        <div className="flex gap-3 justify-center mb-10">
+          <Link href="/login" className="inline-flex items-center gap-2 bg-green-800 text-white rounded-xl px-6 py-3.5 text-sm font-medium hover:bg-green-900 transition-colors">
+            <ArrowRight className="w-4 h-4" /> Criar conta grátis
+          </Link>
+          <Link href="/precos" className="inline-flex items-center gap-2 border border-stone-200 text-stone-700 rounded-xl px-6 py-3.5 text-sm font-medium hover:bg-stone-50 transition-colors">
+            <Play className="w-4 h-4" /> Ver planos e preços
+          </Link>
+        </div>
+        <div className="flex gap-6 justify-center text-xs text-stone-400 mb-16 flex-wrap">
+          {[
+            { icon: ShieldCheck, text: 'Sem cartão de crédito' },
+            { icon: Clock, text: 'Configuração em 2 minutos' },
+            { icon: Smartphone, text: 'Funciona offline (PWA)' },
+            { icon: Brain, text: 'IA com Claude Sonnet' },
+          ].map(({ icon: Icon, text }) => (
+            <span key={text} className="flex items-center gap-1.5">
+              <Icon className="w-3.5 h-3.5 text-green-600" /> {text}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* DASHBOARD SCREENSHOT */}
+      <section className="px-8 mb-0">
+        <div className="max-w-5xl mx-auto rounded-t-2xl overflow-hidden border border-stone-200 shadow-[0_-4px_40px_rgba(59,109,17,0.08)]">
+          <div className="bg-green-950 px-4 py-2.5 flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-red-400 opacity-80" />
+            <span className="w-3 h-3 rounded-full bg-yellow-400 opacity-80" />
+            <span className="w-3 h-3 rounded-full bg-green-400 opacity-80" />
+            <div className="flex-1 bg-white/10 rounded-md py-1 px-3 text-[11px] text-white/50 text-center">
+              campoclima.com.br/app — Dashboard · Fazenda São João, Sorriso — MT
+            </div>
+          </div>
+          <div className="bg-stone-50 grid grid-cols-[180px_1fr] min-h-[320px]">
+            <div className="bg-green-950 p-0">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+                <div className="w-6 h-6 bg-green-700 rounded-md flex items-center justify-center">
+                  <Leaf className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-xs font-medium text-white">CampoClima</span>
+              </div>
+              {[
+                ['Clima & alertas', true], ['Minhas culturas', false], ['Talhões & mapa', false],
+                ['NDVI & satélite', false], ['Pulverização', false], ['Solo IA', false],
+                ['Calendário', false], ['Assistente IA', false],
+              ].map(([label, active]) => (
+                <div key={String(label)} className={`px-4 py-2 text-[11px] flex items-center gap-2 ${active ? 'bg-white/10 text-white font-medium' : 'text-white/50'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-green-400' : 'bg-transparent'}`} />
+                  {String(label)}
+                </div>
+              ))}
+            </div>
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium text-green-950">Visão geral da fazenda</span>
+                <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">3 alertas IA</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                {[
+                  { v: '28°C', l: 'Temperatura', tag: 'máx 34°C', c: 'amber' },
+                  { v: '12mm', l: 'Chuva 24h', tag: 'acima média', c: 'green' },
+                  { v: '0.74', l: 'NDVI médio', tag: 'ótimo', c: 'green' },
+                  { v: '87%', l: 'Safra', tag: 'no prazo', c: 'green' },
+                ].map(({ v, l, tag, c }) => (
+                  <div key={l} className="bg-white rounded-lg border border-stone-100 p-2.5">
+                    <p className="text-base font-medium text-green-900">{v}</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">{l}</p>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full mt-1 inline-block font-medium ${c === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>{tag}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="bg-white rounded-lg border border-stone-100 p-2.5">
+                  <p className="text-[10px] font-medium text-green-900 mb-2">Precipitação — 7 dias (mm)</p>
+                  <div className="flex items-end gap-1 h-12">
+                    {[25, 65, 40, 90, 55, 30, 70].map((h, i) => (
+                      <div key={i} className={`flex-1 rounded-t-sm ${i === 3 ? 'bg-green-700' : 'bg-green-300'}`} style={{ height: `${h}%` }} />
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map((d,i) => (
+                      <span key={d} className={`text-[9px] ${i===3?'text-green-800 font-medium':'text-stone-300'}`}>{d}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg border border-stone-100 p-2.5">
+                  <p className="text-[10px] font-medium text-green-900 mb-2">Alertas gerados por IA</p>
+                  {[
+                    { c: 'bg-red-400', t: 'Risco de geada nas próximas 48h', u: 'Urgente' },
+                    { c: 'bg-amber-400', t: 'Janela de pulverização amanhã 6–10h', u: 'Hoje' },
+                    { c: 'bg-green-500', t: 'Déficit hídrico no Talhão 2', u: 'Atenção' },
+                  ].map(({ c, t, u }) => (
+                    <div key={t} className="flex items-center gap-2 py-1.5 border-b border-stone-50 last:border-0">
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${c}`} />
+                      <span className="text-[10px] text-stone-500 flex-1">{t}</span>
+                      <span className="text-[9px] text-stone-300">{u}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-1.5">
+                {[
+                  { d: 'Seg', i: '☀', t: '31°C', r: '0mm' },
+                  { d: 'Ter', i: '⛅', t: '27°C', r: '4mm' },
+                  { d: 'Qua', i: '🌧', t: '24°C', r: '18mm' },
+                  { d: 'Qui', i: '🌧', t: '22°C', r: '32mm' },
+                  { d: 'Sex', i: '☀', t: '29°C', r: '0mm' },
+                ].map(({ d, i, t, r }) => (
+                  <div key={d} className="flex-1 bg-white rounded-lg border border-stone-100 p-1.5 text-center">
+                    <p className="text-[9px] text-stone-400">{d}</p>
+                    <p className="text-xs my-0.5">{i}</p>
+                    <p className="text-[10px] font-medium text-stone-700">{t}</p>
+                    <p className="text-[9px] text-green-600">{r}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section id="recursos" className="px-8 py-24 bg-stone-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-medium text-stone-900 mb-3">Tudo que sua fazenda precisa</h2>
+            <p className="text-stone-500">11 módulos integrados, movidos por inteligência artificial</p>
+          </div>
+
+          {/* Feature 1: Mapa */}
+          <div className="grid grid-cols-2 gap-12 items-center mb-20">
+            <div>
+              <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-800 text-xs font-medium px-3 py-1 rounded-full border border-green-200 mb-4">
+                Talhões & NDVI
+              </span>
+              <h3 className="text-2xl font-medium text-stone-900 mb-3">Veja a saúde de cada talhão pelo satélite</h3>
+              <p className="text-stone-500 text-sm leading-relaxed mb-5">Mapa interativo com NDVI colorido por talhão. Clique para ver área, cultura, solo e histórico de produtividade comparativo safra a safra.</p>
+              <ul className="space-y-2.5">
+                {['NDVI por talhão com escala de cores automática','Histórico 12 meses vs safra anterior','Detecção automática de anomalias','Tiles OpenStreetMap com cache offline'].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-stone-500">
+                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+              <div className="bg-green-950 px-3 py-2 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-400/80" /><span className="w-2 h-2 rounded-full bg-yellow-400/80" /><span className="w-2 h-2 rounded-full bg-green-400/80" />
+                <span className="text-[10px] text-white/50 ml-1">Talhões — Mapa interativo</span>
+              </div>
+              <div className="relative h-52 bg-green-100 overflow-hidden">
+                <div className="absolute inset-0" style={{background:'#d4e8c2'}} />
+                <div className="absolute rounded-md opacity-75" style={{background:'#3b6d11',width:150,height:80,top:20,left:20}} />
+                <div className="absolute rounded-md opacity-75" style={{background:'#97c459',width:100,height:65,top:110,left:40}} />
+                <div className="absolute rounded-md opacity-70" style={{background:'#ef9f27',width:120,height:72,top:55,left:190}} />
+                <div className="absolute bg-white rounded-xl border border-stone-200 p-3 right-3 top-3 w-36 text-[10px]">
+                  <p className="font-medium text-green-900 mb-2">Legenda NDVI</p>
+                  <div className="h-2 rounded-full mb-1" style={{background:'linear-gradient(to right,#e24b4a,#ef9f27,#97c459,#3b6d11)'}} />
+                  <div className="flex justify-between text-stone-400 mb-2"><span>0.0</span><span>0.5</span><span>1.0</span></div>
+                  {[{c:'#3b6d11',n:'Talhão 1',v:'0.74'},{c:'#97c459',n:'Talhão 2',v:'0.62'},{c:'#ef9f27',n:'Talhão 3',v:'0.51'}].map(({c,n,v}) => (
+                    <div key={n} className="flex items-center gap-1.5 py-1 border-t border-stone-100">
+                      <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{background:c}} />
+                      <span className="flex-1 text-stone-500">{n}</span>
+                      <span className="font-medium text-green-800">{v}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="absolute bg-white rounded-lg border border-stone-200 px-2 py-1 top-5 left-5 text-[10px]">
+                  <p className="font-medium text-green-900">Talhão 1 — Soja</p>
+                  <p className="text-stone-400">NDVI 0.74 · 120 ha</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 2: Relatório IA */}
+          <div className="grid grid-cols-2 gap-12 items-center mb-20">
+            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden order-first">
+              <div className="bg-green-950 px-3 py-2 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-400/80" /><span className="w-2 h-2 rounded-full bg-yellow-400/80" /><span className="w-2 h-2 rounded-full bg-green-400/80" />
+                <span className="text-[10px] text-white/50 ml-1">Relatório de Safra 2025/26</span>
+              </div>
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs font-medium text-green-900">Fazenda São João · Sorriso — MT</span>
+                  <span className="text-[10px] bg-green-50 text-green-800 border border-green-200 px-2 py-0.5 rounded-md">Exportar PDF</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {[{v:'62 sc/ha',l:'Produtividade'},{v:'R$ 487k',l:'Receita est.'},{v:'98 dias',l:'Ciclo safra'}].map(({v,l}) => (
+                    <div key={l} className="bg-green-50 rounded-lg p-2 text-center">
+                      <p className="text-sm font-medium text-green-900">{v}</p>
+                      <p className="text-[9px] text-stone-400 mt-0.5">{l}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-green-800 text-white text-[9px] font-medium px-2 py-0.5 rounded">IA Análise</span>
+                    <span className="text-[10px] text-stone-400">gerado em 3s · Claude Sonnet</span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 leading-relaxed">A safra 2025/26 apresentou <strong className="text-green-800">desempenho acima da média regional</strong>. Precipitação acumulada de 1.240mm dentro do ideal para soja.</p>
+                  <div className="mt-2 space-y-1">
+                    {['Antecipar plantio do Talhão 3 em 7–10 dias','Aplicar calcário no Talhão 2 — pH 5.4'].map(r => (
+                      <div key={r} className="flex items-start gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1 flex-shrink-0" />
+                        <p className="text-[10px] text-stone-500">{r}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-800 text-xs font-medium px-3 py-1 rounded-full border border-green-200 mb-4">
+                Relatórios com IA
+              </span>
+              <h3 className="text-2xl font-medium text-stone-900 mb-3">Laudo de safra gerado pela IA em segundos</h3>
+              <p className="text-stone-500 text-sm leading-relaxed mb-5">A IA analisa clima, produtividade, aplicações e solo para gerar um relatório executivo completo — exportável em PDF para apresentar ao banco, cooperativa ou agrônomo.</p>
+              <ul className="space-y-2.5">
+                {['Resumo executivo com insights automáticos','KPIs de produtividade por talhão','Histórico de pulverizações e irrigação','Exportação em PDF profissional'].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-stone-500">
+                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Feature 3: Chat IA */}
+          <div className="grid grid-cols-2 gap-12 items-center">
+            <div>
+              <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-800 text-xs font-medium px-3 py-1 rounded-full border border-green-200 mb-4">
+                AgroAssistente IA
+              </span>
+              <h3 className="text-2xl font-medium text-stone-900 mb-3">Um agrônomo virtual que conhece sua fazenda</h3>
+              <p className="text-stone-500 text-sm leading-relaxed mb-5">Converse em linguagem natural com uma IA que tem contexto completo da sua propriedade — clima atual, histórico do solo, culturas plantadas e previsão do tempo.</p>
+              <ul className="space-y-2.5">
+                {['Contexto completo da sua propriedade','Recomendações baseadas em dados reais','Disponível 24h, direto do celular','Powered by Claude Sonnet (Anthropic)'].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-stone-500">
+                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+              <div className="bg-green-950 px-3 py-2 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-400/80" /><span className="w-2 h-2 rounded-full bg-yellow-400/80" /><span className="w-2 h-2 rounded-full bg-green-400/80" />
+                <span className="text-[10px] text-white/50 ml-1">AgroAssistente IA</span>
+              </div>
+              <div className="p-4 space-y-3 bg-stone-50 min-h-48">
+                <div className="flex justify-end"><div className="bg-green-100 text-green-900 text-xs rounded-2xl rounded-tr-sm px-3 py-2 max-w-[75%]">Posso pulverizar amanhã cedo no Talhão 1?</div></div>
+                <div className="flex justify-start"><div className="bg-white border border-stone-200 text-stone-600 text-xs rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] leading-relaxed"><strong className="text-green-800">Sim, amanhã é uma boa janela.</strong> Vento previsto 8 km/h, umidade 72% às 6h e temperatura de 21°C. Recomendo aplicar entre <strong className="text-green-800">6h e 9h30</strong>.</div></div>
+                <div className="flex justify-end"><div className="bg-green-100 text-green-900 text-xs rounded-2xl rounded-tr-sm px-3 py-2 max-w-[75%]">Qual produto para ferrugem na soja?</div></div>
+                <div className="flex justify-start"><div className="bg-white border border-stone-200 text-stone-600 text-xs rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] leading-relaxed">Para ferrugem asiática em estágio inicial, recomendo <strong className="text-green-800">Priori Xtra</strong> ou <strong className="text-green-800">Fox Xpro</strong> com adjuvante oleoso...</div></div>
+                <div className="bg-white border border-stone-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                  <span className="text-xs text-stone-300 flex-1">Pergunte ao seu agrônomo IA...</span>
+                  <div className="w-6 h-6 bg-green-700 rounded-lg flex items-center justify-center">
+                    <ArrowRight className="w-3 h-3 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DEPOIMENTOS */}
+      <section id="depoimentos" className="px-8 py-24">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-medium text-stone-900 mb-3">Produtores que já usam o CampoClima</h2>
+            <p className="text-stone-500">Resultados reais de quem tomou decisões mais inteligentes no campo</p>
+          </div>
+          <div className="grid grid-cols-3 gap-5">
+            {[
+              { name: 'Carlos Lima', role: 'Sorriso, MT · 800 ha', text: '"O alerta de geada me salvou. A IA avisou 48h antes e consegui acionar a irrigação de proteção. Estimativa de perda evitada: R$ 80 mil."', initials: 'CL', featured: false },
+              { name: 'Ana Ferreira', role: 'Rondonópolis, MT · 420 ha', text: '"O assistente IA me orientou sobre o momento certo de colheita levando em conta a previsão de chuva. Consegui 4 dias a mais de janela seca."', initials: 'AF', featured: true },
+              { name: 'Marcos Rocha', role: 'Campo Verde, MT · 1.200 ha', text: '"Antes eu precisava de 3 sistemas diferentes. Agora tudo está no CampoClima: clima, mapa NDVI e laudo de solo com IA."', initials: 'MR', featured: false },
+            ].map(({ name, role, text, initials, featured }) => (
+              <div key={name} className={`rounded-2xl p-5 border ${featured ? 'border-green-300 bg-green-50' : 'border-stone-200 bg-white'}`}>
+                <div className="flex gap-0.5 mb-3">{[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}</div>
+                <p className="text-sm text-stone-600 leading-relaxed mb-4">{text}</p>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-800">{initials}</div>
+                  <div>
+                    <p className="text-sm font-medium text-stone-800">{name}</p>
+                    <p className="text-xs text-stone-400">{role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA FINAL */}
+      <section className="bg-green-950 py-24 px-8 text-center">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-4xl font-medium text-white mb-4">Comece hoje.<br />Sua próxima safra agradece.</h2>
+          <p className="text-green-300 mb-8 leading-relaxed">Cadastre sua fazenda gratuitamente e veja a diferença de tomar decisões com dados reais e IA.</p>
+          <div className="flex gap-3 justify-center">
+            <Link href="/login" className="inline-flex items-center gap-2 bg-green-400 text-green-950 font-medium rounded-xl px-7 py-3.5 text-sm hover:bg-green-300 transition-colors">
+              <ArrowRight className="w-4 h-4" /> Criar minha conta grátis
+            </Link>
+            <Link href="/precos" className="inline-flex items-center gap-2 border border-white/20 text-white rounded-xl px-7 py-3.5 text-sm hover:bg-white/10 transition-colors">
+              Ver planos e preços
+            </Link>
+          </div>
+          <p className="text-green-500 text-xs mt-4">Sem cartão de crédito · Cancele quando quiser</p>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-stone-100 px-8 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-green-800 rounded-md flex items-center justify-center">
+            <Leaf className="w-3 h-3 text-white" />
+          </div>
+          <span className="text-sm font-medium text-stone-700">CampoClima</span>
+        </div>
+        <p className="text-xs text-stone-400">© 2026 CampoClima · Inteligência para o campo brasileiro</p>
+        <div className="flex gap-5">
+          {['Privacidade', 'Termos', 'Contato', 'Blog'].map(l => (
+            <Link key={l} href="#" className="text-xs text-stone-400 hover:text-stone-600">{l}</Link>
+          ))}
+        </div>
+      </footer>
     </div>
   )
 }

@@ -12,7 +12,7 @@ const nav = [
   {
     section: 'Principal',
     items: [
-      { href: '/', label: 'Clima & alertas', icon: Cloud, dot: 'warning' },
+      { href: '/app', label: 'Clima & alertas', icon: Cloud, dot: 'warning' },
       { href: '/culturas', label: 'Minhas culturas', icon: Sprout },
       { href: '/talhoes', label: 'Talhões & mapa', icon: Map },
       { href: '/ndvi', label: 'NDVI & satélite', icon: BarChart2 },
@@ -49,7 +49,7 @@ export function Sidebar() {
     <aside className="w-52 flex-shrink-0 border-r border-stone-200 bg-white flex flex-col overflow-y-auto">
       <div className="flex items-center gap-2 px-4 py-3.5 border-b border-stone-200">
         <Leaf className="w-5 h-5 text-green-700" />
-        <span className="font-semibold text-sm text-stone-800">AgroClima IA</span>
+        <span className="font-semibold text-sm text-stone-800">CampoClima</span>
       </div>
 
       <div className="px-4 py-3 border-b border-stone-100">
