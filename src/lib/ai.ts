@@ -102,10 +102,16 @@ Suas diretrizes:
 - Respostas curtas para perguntas simples, detalhadas para problemas complexos`
 
   const msg = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1000,
-    system,
-    messages,
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 600,
+    system: [
+      {
+        type: 'text',
+        text: system,
+        cache_control: { type: 'ephemeral' },
+      },
+    ] as Parameters<typeof client.messages.create>[0]['system'],
+    messages: messages.slice(-8),
   })
 
   return msg.content[0].type === 'text' ? msg.content[0].text : ''

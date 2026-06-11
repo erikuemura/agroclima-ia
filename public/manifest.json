@@ -1,8 +1,8 @@
 {
-  "name": "AgroClima IA",
-  "short_name": "AgroClima",
+  "name": "CampoClima",
+  "short_name": "CampoClima",
   "description": "Inteligência para o campo — clima, solo e decisão por IA",
-  "start_url": "/",
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#fafaf9",
   "theme_color": "#3b6d11",
@@ -23,8 +23,8 @@
   ],
   "shortcuts": [
     {
-      "name": "Clima & alertas",
-      "url": "/",
+      "name": "Clima & Alertas",
+      "url": "/app",
       "description": "Ver previsão e alertas da fazenda"
     },
     {
