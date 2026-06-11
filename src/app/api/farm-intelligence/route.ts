@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDemoProfileFromCookie } from '@/lib/demo-profiles'
+import { pricesFromApi, revenueEstimate, totalProductionValue, formatBRL, matchCommodity } from '@/lib/finance'
 
 // Builds a concise AI-ready context string from all external APIs
 export async function GET(req: Request) {
@@ -11,17 +12,19 @@ export async function GET(req: Request) {
   // Self-fetch usa a origem da própria requisição — funciona em qualquer deploy sem env
   const base = new URL(req.url).origin
 
-  const [fires, climate, soil, ibge] = await Promise.allSettled([
+  const [fires, climate, soil, ibge, commodities] = await Promise.allSettled([
     fetch(`${base}/api/queimadas?lat=${lat}&lon=${lon}&state=${state}`).then(r => r.json()),
     fetch(`${base}/api/climate-history?lat=${lat}&lon=${lon}`).then(r => r.json()),
     fetch(`${base}/api/soil-grid?lat=${lat}&lon=${lon}`).then(r => r.json()),
     fetch(`${base}/api/ibge-pam?city=${encodeURIComponent(city)}&state=${state}&crop=${encodeURIComponent(primaryCrop)}`).then(r => r.json()),
+    fetch(`${base}/api/commodities`).then(r => r.json()),
   ])
 
-  const f = fires.status   === 'fulfilled' ? fires.value   : null
-  const c = climate.status === 'fulfilled' ? climate.value : null
-  const s = soil.status    === 'fulfilled' ? soil.value    : null
-  const b = ibge.status    === 'fulfilled' ? ibge.value    : null
+  const f = fires.status       === 'fulfilled' ? fires.value       : null
+  const c = climate.status     === 'fulfilled' ? climate.value     : null
+  const s = soil.status        === 'fulfilled' ? soil.value        : null
+  const b = ibge.status        === 'fulfilled' ? ibge.value        : null
+  const m = commodities.status === 'fulfilled' ? commodities.value : null
 
   const lines: string[] = ['INTELIGÊNCIA ADICIONAL DA FAZENDA (dados em tempo real):']
 
@@ -39,6 +42,20 @@ export async function GET(req: Request) {
   }
   if (b) {
     lines.push(`📊 Benchmark IBGE (${b.source}): produtividade média de ${primaryCrop} em ${city}: ${b.city?.yieldSc ?? '—'} sc/ha | Estado ${state}: ${b.stateYieldSc} sc/ha.`)
+  }
+
+  if (m?.commodities) {
+    const prices = pricesFromApi(m)
+    const quoted = m.commodities.map((q: { name: string; price: number; unit: string }) => `${q.name} R$${q.price.toFixed(2)} ${q.unit}`).join(' | ')
+    lines.push(`💰 Cotações hoje: ${quoted}.`)
+    const total = totalProductionValue(profile.crops, prices)
+    if (total > 0) {
+      const perCrop = profile.crops
+        .filter(cr => matchCommodity(cr.name))
+        .map(cr => `${cr.name}: ${formatBRL(revenueEstimate(cr, prices) ?? 0)}`)
+        .join(' | ')
+      lines.push(`💵 Receita projetada da fazenda na cotação atual: ${formatBRL(total)} (${perCrop}). Use esses valores para quantificar recomendações em reais.`)
+    }
   }
 
   const contextString = lines.join('\n')

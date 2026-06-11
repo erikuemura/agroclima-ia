@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -10,6 +11,10 @@ import {
 import type { WeatherCurrent, WeatherDay, Alert, Crop, Farm } from '@/types'
 import type { DemoProfile } from '@/lib/demo-profiles'
 import { cn } from '@/lib/utils'
+import {
+  pricesFromApi, lossFromWaterDeficit, revenueEstimate, matchCommodity,
+  formatBRL, type CommodityPrices,
+} from '@/lib/finance'
 import { CommoditiesCard } from './CommoditiesCard'
 import { RegionalBenchmark } from './RegionalBenchmark'
 import { QueimadasCard } from './QueimadasCard'
@@ -64,6 +69,28 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
   const waterDeficit = Math.max(0, current.eto7d - current.rain7d)
   const spraySafe = current.windSpeed >= 5 && current.windSpeed <= 20 && days[0]?.rain < 2
 
+  // Preços do dia para a camada financeira (déficit → R$, receita por cultura)
+  const [prices, setPrices] = useState<CommodityPrices | null>(null)
+  useEffect(() => {
+    fetch('/api/commodities')
+      .then(r => r.json())
+      .then(d => setPrices(pricesFromApi(d)))
+      .catch(() => {})
+  }, [])
+
+  // Perda estimada pelo déficit hídrico na cultura mais sensível no momento
+  const deficitLoss = (() => {
+    if (!prices || waterDeficit <= 0) return null
+    let best: { crop: Crop; loss: NonNullable<ReturnType<typeof lossFromWaterDeficit>> } | null = null
+    for (const crop of crops) {
+      const commodity = matchCommodity(crop.name)
+      if (!commodity) continue
+      const loss = lossFromWaterDeficit(waterDeficit, current.eto7d, crop, prices[commodity] ?? 0)
+      if (loss && (!best || loss.lossBRL > best.loss.lossBRL)) best = { crop, loss }
+    }
+    return best
+  })()
+
   return (
     <div className="space-y-6">
       <div>
@@ -89,6 +116,9 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
           <p className="text-2xl font-semibold text-stone-800">{current.rain7d} mm</p>
           <p className={cn('text-xs mt-0.5', waterDeficit > 15 ? 'text-red-500' : 'text-stone-400')}>
             {waterDeficit > 0 ? `Déficit: ${waterDeficit.toFixed(1)} mm` : 'Balanço positivo'}
+            {deficitLoss && deficitLoss.loss.lossBRL > 500 && (
+              <span className="font-medium"> ≈ {formatBRL(deficitLoss.loss.lossBRL)} em risco</span>
+            )}
           </p>
         </div>
         <div className="bg-stone-100 rounded-xl p-4">
@@ -213,6 +243,11 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
                 <span className="text-[10px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded">
                   Colheita: {new Date(crop.harvestAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                 </span>
+                {prices && revenueEstimate(crop, prices) !== null && (
+                  <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded font-medium">
+                    💰 {formatBRL(revenueEstimate(crop, prices)!)} projetados
+                  </span>
+                )}
               </div>
             </Card>
           ))}
@@ -236,7 +271,7 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
 
       {/* Cotações + Benchmark regional */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CommoditiesCard />
+        <CommoditiesCard crops={crops} />
         <RegionalBenchmark profile={profile} />
       </div>
 
@@ -268,6 +303,21 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
               </div>
             ))}
           </div>
+
+          {deficitLoss && deficitLoss.loss.lossBRL > 500 && (
+            <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <p className="text-xs text-amber-800 leading-relaxed">
+                💰 <strong>Impacto financeiro:</strong> o déficit de {waterDeficit.toFixed(0)}mm na fase de{' '}
+                <strong>{deficitLoss.crop.phase.toLowerCase()}</strong> da {deficitLoss.crop.name} pode custar{' '}
+                <strong>{deficitLoss.loss.lossScHa} sc/ha</strong> ≈{' '}
+                <strong>{formatBRL(deficitLoss.loss.lossBRL)}</strong> nos {deficitLoss.crop.hectares} ha.
+                Irrigar agora protege essa receita.
+              </p>
+              <p className="text-[9px] text-amber-600/70 mt-1.5">
+                Estimativa FAO-33 (Ky {deficitLoss.loss.ky}) × cotação do dia
+              </p>
+            </div>
+          )}
         </Card>
 
         <Card className="p-5">

@@ -27,7 +27,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Rotas protegidas — redireciona para /login se não autenticado
-  const protectedPaths = ['/app', '/culturas', '/talhoes', '/ndvi', '/solo', '/irrigacao', '/pulverizacao', '/calendario', '/relatorios', '/assistente']
+  const protectedPaths = ['/app', '/culturas', '/talhoes', '/ndvi', '/solo', '/irrigacao', '/pulverizacao', '/calendario', '/relatorios', '/assistente', '/financeiro']
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith(p + '/'))
 
   // Demo mode: cookie demo_profile bypasses auth

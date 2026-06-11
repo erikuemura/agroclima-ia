@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react'
+import { pricesFromApi, totalProductionValue, formatBRLFull } from '@/lib/finance'
+import type { Crop } from '@/types'
 
 interface Commodity {
   id: string
@@ -26,7 +28,7 @@ function delta(price: number, prev: number) {
   return { diff: diff.toFixed(2), pct, up: diff > 0, neutral: Math.abs(diff) < 0.01 }
 }
 
-export function CommoditiesCard() {
+export function CommoditiesCard({ crops }: { crops?: Crop[] }) {
   const [data, setData] = useState<CommoditiesData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -113,6 +115,17 @@ export function CommoditiesCard() {
           })}
         </div>
       )}
+
+      {data && crops && crops.length > 0 && (() => {
+        const total = totalProductionValue(crops, pricesFromApi(data))
+        if (total <= 0) return null
+        return (
+          <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 flex items-center justify-between">
+            <p className="text-xs text-green-800">Sua produção estimada vale hoje</p>
+            <p className="text-sm font-semibold text-green-900">{formatBRLFull(total)}</p>
+          </div>
+        )
+      })()}
 
       <p className="text-[9px] text-stone-300 mt-3 text-right">
         Simulação baseada em CEPEA/ESALQ · atualização diária
