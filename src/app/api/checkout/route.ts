@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createPreference, PLAN_PRICES, PlanId } from '@/lib/mercadopago'
+import { createSubscription, PLANS, PlanId } from '@/lib/mercadopago'
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,21 +7,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Mercado Pago não configurado' }, { status: 503 })
     }
 
-    const { planId, annual } = await req.json()
+    const { planId, annual, payerEmail } = await req.json()
 
-    if (!planId || !(planId in PLAN_PRICES)) {
+    if (!planId || !(planId in PLANS)) {
       return NextResponse.json({ error: 'Plano inválido' }, { status: 400 })
     }
 
-    const preference = await createPreference(planId as PlanId, !!annual)
+    const subscription = await createSubscription(planId as PlanId, !!annual, payerEmail)
 
     return NextResponse.json({
-      init_point: preference.init_point,
-      sandbox_init_point: preference.sandbox_init_point,
-      id: preference.id,
+      init_point: subscription.init_point,
+      id: subscription.id,
     })
   } catch (err) {
     console.error('[checkout]', err)
-    return NextResponse.json({ error: 'Erro ao criar checkout' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao criar assinatura' }, { status: 500 })
   }
 }

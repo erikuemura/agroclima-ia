@@ -1,41 +1,47 @@
-import { MercadoPagoConfig, Preference } from 'mercadopago'
+import { MercadoPagoConfig, PreApproval } from 'mercadopago'
 
 export const mp = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
 })
 
-export const PLAN_PRICES = {
-  produtor: { monthly: 4900, annual: 46800, label: 'CampoClima Produtor' },
-  premium:  { monthly: 12900, annual: 118800, label: 'CampoClima Premium' },
+export const PLANS = {
+  produtor: {
+    label: 'CampoClima Produtor',
+    monthly:  { amount: 49.00, frequency: 1, frequency_type: 'months' as const },
+    annual:   { amount: 39.00, frequency: 1, frequency_type: 'months' as const }, // cobrado mensalmente com desconto anual
+  },
+  premium: {
+    label: 'CampoClima Premium',
+    monthly:  { amount: 129.00, frequency: 1, frequency_type: 'months' as const },
+    annual:   { amount: 99.00, frequency: 1, frequency_type: 'months' as const },
+  },
 } as const
 
-export type PlanId = keyof typeof PLAN_PRICES
+export type PlanId = keyof typeof PLANS
 
-export async function createPreference(planId: PlanId, annual: boolean, userEmail?: string) {
-  const plan = PLAN_PRICES[planId]
-  const unit_price = annual ? plan.annual / 100 : plan.monthly / 100
-  const description = annual ? `${plan.label} — Plano Anual` : `${plan.label} — Plano Mensal`
+export async function createSubscription(planId: PlanId, annual: boolean, payerEmail?: string) {
+  const plan = PLANS[planId]
+  const pricing = annual ? plan.annual : plan.monthly
+  const reason = annual
+    ? `${plan.label} — Mensal (contrato anual)`
+    : `${plan.label} — Mensal`
 
-  const preference = new Preference(mp)
-  const result = await preference.create({
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+
+  const preApproval = new PreApproval(mp)
+  const result = await preApproval.create({
     body: {
-      items: [{
-        id: `${planId}_${annual ? 'annual' : 'monthly'}`,
-        title: description,
-        quantity: 1,
-        unit_price,
-        currency_id: 'BRL',
-      }],
-      payer: userEmail ? { email: userEmail } : undefined,
-      back_urls: {
-        success: `${process.env.NEXT_PUBLIC_APP_URL}/app?checkout=success`,
-        failure: `${process.env.NEXT_PUBLIC_APP_URL}/precos?checkout=failure`,
-        pending: `${process.env.NEXT_PUBLIC_APP_URL}/precos?checkout=pending`,
+      reason,
+      external_reference: `${planId}_${annual ? 'annual' : 'monthly'}`,
+      payer_email: payerEmail,
+      auto_recurring: {
+        frequency:       pricing.frequency,
+        frequency_type:  pricing.frequency_type,
+        transaction_amount: pricing.amount,
+        currency_id:     'BRL',
       },
-      auto_return: 'approved',
-      notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/mp`,
-      statement_descriptor: 'CAMPOCLIMA',
-      metadata: { planId, annual },
+      back_url: `${appUrl}/app?checkout=success`,
+      status: 'pending',
     },
   })
 
