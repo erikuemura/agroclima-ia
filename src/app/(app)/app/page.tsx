@@ -1,15 +1,20 @@
 import { Suspense } from 'react'
+import { cookies } from 'next/headers'
 import { WeatherDashboard } from '@/components/dashboard/WeatherDashboard'
 import { fetchForecast } from '@/lib/weather'
 import { generateAlerts } from '@/lib/ai'
-import { FARM, CROPS } from '@/lib/mock-data'
+import { getDemoProfileFromCookie } from '@/lib/demo-profiles'
 
 export const dynamic = 'force-dynamic'
 
 async function DashboardContent() {
-  const weather = await fetchForecast(FARM.lat, FARM.lon)
-  const alerts = await generateAlerts(weather.current, weather.days, CROPS).catch(() => [])
-  return <WeatherDashboard weather={weather} alerts={alerts} crops={CROPS} farm={FARM} />
+  const cookieStore = await cookies()
+  const profile = getDemoProfileFromCookie(
+    cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ')
+  )
+  const weather = await fetchForecast(profile.farm.lat, profile.farm.lon)
+  const alerts = await generateAlerts(weather.current, weather.days, profile.crops).catch(() => profile.alerts)
+  return <WeatherDashboard weather={weather} alerts={alerts} crops={profile.crops} farm={profile.farm} />
 }
 
 export default function HomePage() {

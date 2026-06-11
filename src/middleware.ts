@@ -30,7 +30,9 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = ['/app', '/culturas', '/talhoes', '/ndvi', '/solo', '/irrigacao', '/pulverizacao', '/calendario', '/relatorios', '/assistente']
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith(p + '/'))
 
-  if (isProtected && !user && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  // Demo mode: cookie demo_profile bypasses auth
+  const isDemo = request.cookies.get('demo_profile')?.value
+  if (isProtected && !user && process.env.NEXT_PUBLIC_SUPABASE_URL && !isDemo) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

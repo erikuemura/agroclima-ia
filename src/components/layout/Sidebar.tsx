@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
 import {
   Cloud, Sprout, Map, BarChart2, Droplets, FlaskConical,
   CalendarDays, FileText, Settings, Leaf, Bot, X,
@@ -49,6 +50,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const profile = getDemoProfileClient()
 
   const content = (
     <aside className="w-52 flex-shrink-0 border-r border-stone-200 bg-white flex flex-col h-full overflow-y-auto">
@@ -66,8 +68,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <div className="px-4 py-3 border-b border-stone-100">
         <p className="text-xs text-stone-400">Fazenda</p>
-        <p className="text-sm font-medium text-stone-800 mt-0.5">Faz. São João</p>
-        <p className="text-xs text-stone-400">Sorriso — MT</p>
+        <p className="text-sm font-medium text-stone-800 mt-0.5">{profile.farm.name}</p>
+        <p className="text-xs text-stone-400">{profile.farm.city} — {profile.farm.state}</p>
       </div>
 
       <nav className="flex-1 py-2">
