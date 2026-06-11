@@ -8,6 +8,7 @@ import { FileText, Sparkles, Loader2, Download, TrendingUp, Droplets, FlaskConic
 import { INITIAL_CROPS } from '@/lib/crops-store'
 import { FIELDS } from '@/lib/fields-data'
 import { FARM } from '@/lib/mock-data'
+import { exportReportPDF } from '@/lib/export-pdf'
 
 const SPRAY_LOG = [
   { date: '2026-05-28', crop: 'Soja', field: 'T1', product: 'Priori Xtra', dose: '300 ml/ha', area: 420, target: 'Ferrugem' },
@@ -228,8 +229,20 @@ Seja técnico mas acessível. Use dados fornecidos.`,
             Relatório executivo gerado por IA
           </h3>
           {aiReport && (
-            <button className="flex items-center gap-1.5 text-xs border border-stone-200 rounded-lg px-3 py-1.5 hover:bg-stone-50 text-stone-500 transition-colors">
-              <Download className="w-3.5 h-3.5" /> Exportar
+            <button
+              onClick={() => exportReportPDF({
+                farmName: FARM.name,
+                season,
+                totalHa,
+                crops: INITIAL_CROPS.map(c => ({ name: c.name, hectares: c.hectares, expectedYield: c.expectedYield, phase: c.phase })),
+                totalRain,
+                avgNdvi,
+                applications: totalApplications,
+                aiReport,
+              })}
+              className="flex items-center gap-1.5 text-xs border border-stone-200 rounded-lg px-3 py-1.5 hover:bg-stone-50 text-stone-500 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" /> Exportar PDF
             </button>
           )}
         </div>

@@ -9,6 +9,18 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "AgroClima IA — Inteligência para o campo",
   description: "Plataforma de apoio à decisão para pequenos e médios produtores rurais",
+  manifest: "/manifest.json",
+  themeColor: "#3b6d11",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AgroClima IA",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
