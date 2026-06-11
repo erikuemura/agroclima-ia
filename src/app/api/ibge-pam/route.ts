@@ -5,7 +5,7 @@ export const revalidate = 86400
 // IBGE municipality codes for demo profiles
 const CITY_CODES: Record<string, number> = {
   'Cascavel':    4104808,
-  'Sorriso':     5107909,
+  'Sorriso':     5107925,
   'Nova Mutum':  5106224,
 }
 
@@ -14,9 +14,9 @@ const STATE_CODES: Record<string, number> = {
   MT: 51, PR: 41, GO: 52, SP: 35, MS: 50, RS: 43, SC: 42, BA: 29,
 }
 
-// Crop codes in IBGE PAM (produto)
+// Crop codes — classificação 81 "Produto das lavouras temporárias" do agregado 1612
 const CROP_CODES: Record<string, number> = {
-  soja: 14139, milho: 14137, algodão: 14132, trigo: 14141, cana: 14128,
+  soja: 2713, milho: 2711, algodão: 2689, trigo: 2716, cana: 2696,
 }
 
 function detectCropCode(cropName: string): number {
@@ -40,16 +40,18 @@ export async function GET(req: Request) {
   const prodCode  = detectCropCode(cropParam)
 
   try {
-    // Variables: 109=área colhida(ha), 216=produção(t), 112=rendimento(kg/ha)
-    const vars = '109|216|112'
-    const url = `https://servicodados.ibge.gov.br/api/v3/agregados/1612/periodos/2023/variaveis/${vars}?localidades=N6[${cityCode}]|N3[${stateCode}]`
+    // Variables: 216=área colhida(ha), 214=quantidade produzida(t), 112=rendimento(kg/ha)
+    const vars = '216|214|112'
+    // classificacao=81 filtra pelo produto (sem ela a API soma TODAS as lavouras temporárias)
+    const url = `https://servicodados.ibge.gov.br/api/v3/agregados/1612/periodos/2023/variaveis/${vars}?localidades=N6[${cityCode}]|N3[${stateCode}]&classificacao=81[${prodCode}]`
     const res = await fetch(url, { signal: AbortSignal.timeout(8000), next: { revalidate: 86400 } })
     if (!res.ok) throw new Error('IBGE API failed')
 
     const json = await res.json()
 
     function extractVal(varId: number, localityLevel: string): number {
-      const varData = json.find((v: { id: number }) => v.id === varId)
+      // A API retorna id como string ("112") — comparar normalizado
+      const varData = json.find((v: { id: number | string }) => String(v.id) === String(varId))
       if (!varData) return 0
       const locality = varData.resultados?.[0]?.series?.find(
         (s: { localidade: { nivel: { id: string } } }) => s.localidade.nivel.id === localityLevel
@@ -57,11 +59,11 @@ export async function GET(req: Request) {
       return parseFloat(locality?.serie?.['2023'] ?? '0') || 0
     }
 
-    const cityAreaHa   = extractVal(109, 'N6')
-    const cityProdT    = extractVal(216, 'N6')
+    const cityAreaHa   = extractVal(216, 'N6')
+    const cityProdT    = extractVal(214, 'N6')
     const cityYieldKgHa= extractVal(112, 'N6')
-    const stateAreaHa  = extractVal(109, 'N3')
-    const stateProdT   = extractVal(216, 'N3')
+    const stateAreaHa  = extractVal(216, 'N3')
+    const stateProdT   = extractVal(214, 'N3')
 
     // Convert yield to sc/ha (soja: 60kg/sc, milho: 60kg/sc)
     const bagKg = 60

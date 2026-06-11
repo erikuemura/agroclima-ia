@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { rateLimit } from '@/lib/rate-limit'
 
 const client = new Anthropic()
 
 export async function POST(req: Request) {
+  const limited = rateLimit(req, { key: 'ai-spray', limit: 10, windowMs: 60_000 })
+  if (limited) return limited
+
   const { windSpeed, humidity, temp, crop, phase, problem } = await req.json()
 
   const prompt = `Você é um agrônomo especialista em proteção de plantas. Analise as condições e sugira o tratamento.

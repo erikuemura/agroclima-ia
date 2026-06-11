@@ -218,8 +218,8 @@ export default function AssistentePage() {
         {/* Suggestions */}
         {messages.length === 1 && (
           <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {suggestions.map(s => (
-              <button key={s} onClick={() => send(s)}
+            {suggestions.map((s, i) => (
+              <button key={i} onClick={() => send(s)}
                 className="text-xs text-stone-500 border border-stone-200 rounded-lg px-3 py-2 hover:bg-stone-50 text-left transition-colors">
                 {s}
               </button>

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { rateLimit } from '@/lib/rate-limit'
 
 const client = new Anthropic()
 
 export async function POST(req: Request) {
+  const limited = rateLimit(req, { key: 'ai-calendar', limit: 10, windowMs: 60_000 })
+  if (limited) return limited
+
   const { crop, field, plantedAt, harvestAt, currentDate } = await req.json()
 
   const prompt = `Você é um agrônomo especialista. Gere um cronograma agrícola para a cultura abaixo.

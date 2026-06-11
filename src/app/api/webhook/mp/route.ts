@@ -1,11 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mp } from '@/lib/mercadopago'
 import { Payment, PreApproval } from 'mercadopago'
+import { createHmac, timingSafeEqual } from 'crypto'
+
+// Valida o header x-signature do Mercado Pago (formato "ts=...,v1=...").
+// Manifest oficial: id:{data.id};request-id:{x-request-id};ts:{ts};
+function validateSignature(req: NextRequest, dataId: string | undefined): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET
+  if (!secret) {
+    console.warn('[webhook/mp] MP_WEBHOOK_SECRET não configurado — assinatura NÃO validada')
+    return true
+  }
+  const signature = req.headers.get('x-signature') ?? ''
+  const requestId = req.headers.get('x-request-id') ?? ''
+  const parts = Object.fromEntries(signature.split(',').map(p => p.trim().split('=') as [string, string]))
+  if (!parts.ts || !parts.v1 || !dataId) return false
+
+  const manifest = `id:${dataId};request-id:${requestId};ts:${parts.ts};`
+  const expected = createHmac('sha256', secret).update(manifest).digest('hex')
+  try {
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1))
+  } catch {
+    return false
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { type, data } = body
+
+    if (!validateSignature(req, data?.id ? String(data.id) : undefined)) {
+      console.warn('[webhook/mp] assinatura inválida — requisição rejeitada')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
 
     // Cobrança de assinatura executada
     if (type === 'payment' && data?.id) {

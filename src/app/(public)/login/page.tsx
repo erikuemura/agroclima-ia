@@ -30,10 +30,10 @@ export default function LoginPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        window.location.href = '/'
+        window.location.href = '/app'
       }
-    } catch (err: any) {
-      setError(err.message ?? 'Erro ao autenticar')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao autenticar')
     } finally {
       setLoading(false)
     }
@@ -44,7 +44,7 @@ export default function LoginPage() {
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo: `${window.location.origin}/app` },
     })
   }
 

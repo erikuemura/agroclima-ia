@@ -1,4 +1,7 @@
-const CACHE = 'campoclima-v2'
+const CACHE = 'campoclima-v3'
+
+// Rotas que variam por cookie (perfil demo) ou são streaming — nunca cachear
+const UNCACHEABLE_API = ['/api/farm-intelligence', '/api/ai-chat', '/api/ai-alerts']
 
 const STATIC = [
   '/offline',
@@ -32,6 +35,7 @@ self.addEventListener('fetch', e => {
 
   // API routes → Network First (fresh data, fallback to cache)
   if (url.pathname.startsWith('/api/')) {
+    if (UNCACHEABLE_API.some(p => url.pathname.startsWith(p))) return
     e.respondWith(
       fetch(request)
         .then(res => {

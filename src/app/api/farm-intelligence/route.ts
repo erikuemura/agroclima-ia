@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDemoProfileFromCookie } from '@/lib/demo-profiles'
 
-export const revalidate = 1800
-
 // Builds a concise AI-ready context string from all external APIs
 export async function GET(req: Request) {
   const cookieHeader = req.headers.get('cookie') ?? ''
@@ -10,7 +8,8 @@ export async function GET(req: Request) {
   const { lat, lon, state, city } = profile.farm
   const primaryCrop = profile.crops[0]?.name ?? 'soja'
 
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3003'
+  // Self-fetch usa a origem da própria requisição — funciona em qualquer deploy sem env
+  const base = new URL(req.url).origin
 
   const [fires, climate, soil, ibge] = await Promise.allSettled([
     fetch(`${base}/api/queimadas?lat=${lat}&lon=${lon}&state=${state}`).then(r => r.json()),

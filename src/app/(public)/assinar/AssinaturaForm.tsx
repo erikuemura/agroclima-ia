@@ -148,8 +148,8 @@ export default function AssinaturaForm({ planId, annual }: { planId: PlanId; ann
       } else {
         setStep('sucesso')
       }
-    } catch (err: any) {
-      setError(err.message ?? 'Erro inesperado. Tente novamente.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro inesperado. Tente novamente.')
     } finally {
       setLoading(false)
     }

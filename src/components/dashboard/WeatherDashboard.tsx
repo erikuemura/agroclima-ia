@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -216,12 +217,14 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
             </Card>
           ))}
 
-          <Card className="p-4 border-dashed flex flex-col items-center justify-center gap-2 min-h-[140px] text-stone-400 hover:bg-stone-50 cursor-pointer transition-colors">
-            <div className="w-8 h-8 rounded-full border-2 border-dashed border-stone-300 flex items-center justify-center">
-              <span className="text-lg leading-none">+</span>
-            </div>
-            <span className="text-xs">Adicionar cultura</span>
-          </Card>
+          <Link href="/culturas">
+            <Card className="p-4 border-dashed flex flex-col items-center justify-center gap-2 min-h-[140px] h-full text-stone-400 hover:bg-stone-50 cursor-pointer transition-colors">
+              <div className="w-8 h-8 rounded-full border-2 border-dashed border-stone-300 flex items-center justify-center">
+                <span className="text-lg leading-none">+</span>
+              </div>
+              <span className="text-xs">Adicionar cultura</span>
+            </Card>
+          </Link>
         </div>
       </div>
 

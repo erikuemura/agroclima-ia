@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
       id:         result.id,
       status:     result.status,
     })
-  } catch (err: any) {
-    console.error('[checkout]', err?.message ?? err)
-    return NextResponse.json({ error: err?.message ?? 'Erro ao criar assinatura' }, { status: 500 })
+  } catch (err: unknown) {
+    console.error('[checkout]', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'Não foi possível criar a assinatura. Verifique os dados do cartão e tente novamente.' }, { status: 500 })
   }
 }

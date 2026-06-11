@@ -9,17 +9,20 @@ export async function GET(req: Request) {
 
   try {
     const props = ['phh2o', 'nitrogen', 'soc', 'clay', 'sand']
-    const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&${props.map(p => `property=${p}`).join('&')}&depth=0-5cm&value=mean`
+    // Pede duas profundidades — pixels de lavoura às vezes têm nodata em 0-5cm
+    const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&${props.map(p => `property=${p}`).join('&')}&depth=0-5cm&depth=5-15cm&value=mean`
 
     const res = await fetch(url, { signal: AbortSignal.timeout(10000), next: { revalidate: 86400 } })
     if (!res.ok) throw new Error('SoilGrids failed')
 
     const json = await res.json()
-    const layers: { name: string; depths: { label: string; values: { mean: number } }[] }[] = json?.properties?.layers ?? []
+    const layers: { name: string; depths: { label: string; values: { mean: number | null } }[] }[] = json?.properties?.layers ?? []
 
     function val(name: string): number {
       const layer = layers.find(l => l.name === name)
-      return layer?.depths?.[0]?.values?.mean ?? 0
+      const mean = layer?.depths?.find(d => d.values?.mean != null)?.values.mean
+      if (mean == null) throw new Error(`SoilGrids sem dados para ${name}`)
+      return mean
     }
 
     // phh2o is pH × 10, nitrogen is cg/kg (÷10 = g/kg), soc is dg/kg (÷10 = g/kg), clay/sand g/kg (÷10 = %)

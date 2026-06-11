@@ -23,7 +23,7 @@ export async function fetchForecast(lat: number, lon: number): Promise<{
     daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,weathercode,et0_fao_evapotranspiration',
     hourly: 'temperature_2m,relative_humidity_2m,wind_speed_10m',
     current_weather: 'true',
-    timezone: 'America/Cuiaba',
+    timezone: 'auto',
     forecast_days: '10',
   })
 
@@ -34,7 +34,11 @@ export async function fetchForecast(lat: number, lon: number): Promise<{
   const daily = data.daily
   const current = data.current_weather
 
-  const humidity = data.hourly?.relative_humidity_2m?.[0] ?? 65
+  // Índice da hora atual no array hourly (índice 0 = meia-noite, não "agora").
+  // current_weather.time pode vir em intervalo de 15min — compara só até a hora.
+  const currentHour = String(current.time ?? '').slice(0, 13)
+  const hourIdx = Math.max(0, (data.hourly?.time as string[] | undefined)?.findIndex(t => t.slice(0, 13) === currentHour) ?? 0)
+  const humidity = data.hourly?.relative_humidity_2m?.[hourIdx] ?? 65
   const rain7d = (daily.precipitation_sum as number[]).slice(0, 7).reduce((a: number, b: number) => a + b, 0)
   const eto = daily.et0_fao_evapotranspiration[0] ?? 5
   const eto7d = (daily.et0_fao_evapotranspiration as number[]).slice(0, 7).reduce((a: number, b: number) => a + b, 0)

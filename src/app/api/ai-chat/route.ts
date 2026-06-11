@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getDemoProfileFromCookie } from '@/lib/demo-profiles'
+import { rateLimit } from '@/lib/rate-limit'
 
 const client = new Anthropic()
 
@@ -7,6 +8,9 @@ const TEXT_MODEL   = 'claude-haiku-4-5-20251001'
 const VISION_MODEL = 'claude-sonnet-4-6'
 
 export async function POST(req: Request) {
+  const limited = rateLimit(req, { key: 'ai-chat', limit: 15, windowMs: 60_000 })
+  if (limited) return limited
+
   const cookieHeader = req.headers.get('cookie') ?? ''
   const profile = getDemoProfileFromCookie(cookieHeader)
 
@@ -99,7 +103,6 @@ ${farmContext ? farmContext + '\n' : ''}REGRAS:
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Transfer-Encoding': 'chunked',
-      'x-anthropic-beta': 'prompt-caching-2024-07-31',
     },
   })
 }
