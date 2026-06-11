@@ -14,7 +14,7 @@ async function DashboardContent() {
   )
   const weather = await fetchForecast(profile.farm.lat, profile.farm.lon)
   const alerts = await generateAlerts(weather.current, weather.days, profile.crops).catch(() => profile.alerts)
-  return <WeatherDashboard weather={weather} alerts={alerts} crops={profile.crops} farm={profile.farm} />
+  return <WeatherDashboard weather={weather} alerts={alerts} crops={profile.crops} farm={profile.farm} profile={profile} />
 }
 
 export default function HomePage() {

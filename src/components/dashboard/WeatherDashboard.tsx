@@ -5,13 +5,17 @@ import {
   CheckCircle2, Info, CloudRain, CloudLightning, Cloud,
 } from 'lucide-react'
 import type { WeatherCurrent, WeatherDay, Alert, Crop, Farm } from '@/types'
+import type { DemoProfile } from '@/lib/demo-profiles'
 import { cn } from '@/lib/utils'
+import { CommoditiesCard } from './CommoditiesCard'
+import { RegionalBenchmark } from './RegionalBenchmark'
 
 interface Props {
   weather: { current: WeatherCurrent; days: WeatherDay[] }
   alerts: Alert[]
   crops: Crop[]
   farm: Farm
+  profile: DemoProfile
 }
 
 const WeatherIcon = ({ icon, size = 20 }: { icon: WeatherDay['icon']; size?: number }) => {
@@ -49,7 +53,7 @@ const statusLabel: Record<Crop['status'], string> = {
   critical: 'Crítico',
 }
 
-export function WeatherDashboard({ weather, alerts, crops, farm }: Props) {
+export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Props) {
   const { current, days } = weather
   const waterDeficit = Math.max(0, current.eto7d - current.rain7d)
   const spraySafe = current.windSpeed >= 5 && current.windSpeed <= 20 && days[0]?.rain < 2
@@ -214,6 +218,12 @@ export function WeatherDashboard({ weather, alerts, crops, farm }: Props) {
             <span className="text-xs">Adicionar cultura</span>
           </Card>
         </div>
+      </div>
+
+      {/* Cotações + Benchmark regional */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <CommoditiesCard />
+        <RegionalBenchmark profile={profile} />
       </div>
 
       {/* ETo + Irrigação */}
