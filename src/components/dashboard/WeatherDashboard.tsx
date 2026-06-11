@@ -1,3 +1,5 @@
+'use client'
+
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -9,6 +11,9 @@ import type { DemoProfile } from '@/lib/demo-profiles'
 import { cn } from '@/lib/utils'
 import { CommoditiesCard } from './CommoditiesCard'
 import { RegionalBenchmark } from './RegionalBenchmark'
+import { QueimadasCard } from './QueimadasCard'
+import { ClimateHistoryCard } from './ClimateHistoryCard'
+import { NasaPowerCard } from './NasaPowerCard'
 
 interface Props {
   weather: { current: WeatherCurrent; days: WeatherDay[] }
@@ -220,11 +225,20 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
         </div>
       </div>
 
+      {/* Queimadas + Histórico climático */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <QueimadasCard lat={farm.lat} lon={farm.lon} state={farm.state} />
+        <ClimateHistoryCard lat={farm.lat} lon={farm.lon} />
+      </div>
+
       {/* Cotações + Benchmark regional */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CommoditiesCard />
         <RegionalBenchmark profile={profile} />
       </div>
+
+      {/* Climatologia NASA 30 anos */}
+      <NasaPowerCard lat={farm.lat} lon={farm.lon} />
 
       {/* ETo + Irrigação */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

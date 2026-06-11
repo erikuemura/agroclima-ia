@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { FlaskConical, Loader2, Sparkles } from 'lucide-react'
+import { FlaskConical, Loader2, Sparkles, Satellite } from 'lucide-react'
 import type { SoilData } from '@/types'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
 
 const CROPS = ['Soja', 'Milho', 'Algodão', 'Sorgo', 'Feijão', 'Arroz', 'Trigo', 'Café', 'Cana-de-açúcar', 'Pastagem']
 const TEXTURES: SoilData['texture'][] = ['argilosa', 'areno-argilosa', 'arenosa', 'média']
@@ -30,12 +31,29 @@ function FieldRow({ label, unit, children }: { label: string; unit?: string; chi
 }
 
 export default function SoloPage() {
+  const profile = getDemoProfileClient()
   const [form, setForm] = useState<SoilData>(defaultForm)
   const [analysis, setAnalysis] = useState('')
   const [loading, setLoading] = useState(false)
+  const [soilGridLoading, setSoilGridLoading] = useState(false)
+  const [soilGridSource, setSoilGridSource] = useState<string | null>(null)
 
   const set = (key: keyof SoilData, val: string | number) =>
     setForm(f => ({ ...f, [key]: val }))
+
+  async function fillFromSatellite() {
+    setSoilGridLoading(true)
+    try {
+      const res = await fetch(`/api/soil-grid?lat=${profile.farm.lat}&lon=${profile.farm.lon}`)
+      if (res.ok) {
+        const data = await res.json()
+        setForm(f => ({ ...f, ...data.formValues, crop: f.crop }))
+        setSoilGridSource(`${data.source} · pH ${data.ph} · ${data.texture}`)
+      }
+    } finally {
+      setSoilGridLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -68,7 +86,25 @@ export default function SoloPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-5">
-          <h3 className="text-sm font-medium text-stone-700 mb-4">Dados da análise</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-stone-700">Dados da análise</h3>
+            <button
+              type="button"
+              onClick={fillFromSatellite}
+              disabled={soilGridLoading}
+              className="flex items-center gap-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+            >
+              {soilGridLoading
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : <Satellite className="w-3 h-3" />}
+              Preencher pelo satélite
+            </button>
+          </div>
+          {soilGridSource && (
+            <p className="text-[10px] text-purple-500 bg-purple-50 rounded-lg px-3 py-1.5 mb-3">
+              🛰️ {soilGridSource}
+            </p>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FieldRow label="pH" unit="H₂O">

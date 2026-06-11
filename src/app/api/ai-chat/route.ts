@@ -11,10 +11,11 @@ export async function POST(req: Request) {
   const profile = getDemoProfileFromCookie(cookieHeader)
 
   const body = await req.json()
-  const { messages, imageBase64, imageMime } = body as {
+  const { messages, imageBase64, imageMime, farmContext } = body as {
     messages: { role: 'user' | 'assistant'; content: string }[]
     imageBase64?: string
     imageMime?: string
+    farmContext?: string
   }
 
   // Cap history to save tokens
@@ -32,7 +33,7 @@ FAZENDA ATIVA:
 - Culturas: ${cropList}
 - Alertas ativos: ${alertList || 'nenhum'}
 
-REGRAS:
+${farmContext ? farmContext + '\n' : ''}REGRAS:
 - Resposta curta e direta (máx 3 parágrafos)
 - Português simples, sem jargão desnecessário
 - Use **negrito** para termos técnicos

@@ -1,3 +1,5 @@
+'use client'
+
 import { Leaf, WifiOff } from 'lucide-react'
 
 export default function OfflinePage() {

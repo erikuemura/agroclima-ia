@@ -1,0 +1,56 @@
+import { NextResponse } from 'next/server'
+import { getDemoProfileFromCookie } from '@/lib/demo-profiles'
+
+export const revalidate = 1800
+
+// Builds a concise AI-ready context string from all external APIs
+export async function GET(req: Request) {
+  const cookieHeader = req.headers.get('cookie') ?? ''
+  const profile = getDemoProfileFromCookie(cookieHeader)
+  const { lat, lon, state, city } = profile.farm
+  const primaryCrop = profile.crops[0]?.name ?? 'soja'
+
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3003'
+
+  const [fires, climate, soil, ibge] = await Promise.allSettled([
+    fetch(`${base}/api/queimadas?lat=${lat}&lon=${lon}&state=${state}`).then(r => r.json()),
+    fetch(`${base}/api/climate-history?lat=${lat}&lon=${lon}`).then(r => r.json()),
+    fetch(`${base}/api/soil-grid?lat=${lat}&lon=${lon}`).then(r => r.json()),
+    fetch(`${base}/api/ibge-pam?city=${encodeURIComponent(city)}&state=${state}&crop=${encodeURIComponent(primaryCrop)}`).then(r => r.json()),
+  ])
+
+  const f = fires.status   === 'fulfilled' ? fires.value   : null
+  const c = climate.status === 'fulfilled' ? climate.value : null
+  const s = soil.status    === 'fulfilled' ? soil.value    : null
+  const b = ibge.status    === 'fulfilled' ? ibge.value    : null
+
+  const lines: string[] = ['INTELIGÊNCIA ADICIONAL DA FAZENDA (dados em tempo real):']
+
+  if (f) {
+    lines.push(`🔥 Queimadas 7 dias: ${f.totalState7d} focos no ${state}. ${f.nearby50} a ≤50km, ${f.nearby100} a ≤100km. Risco: ${f.risk}${f.nearestKm ? ` (mais próximo: ${f.nearestKm}km)` : ''}.`)
+  }
+  if (c) {
+    const rSign = c.rainDelta >= 0 ? '+' : ''
+    const tSign = c.tempDelta >= 0 ? '+' : ''
+    lines.push(`🌧 Chuva ${c.monthName}: ${c.current.rain}mm vs ${c.lastYear.rain}mm mesmo período ano passado (${rSign}${c.rainDelta}%). Status: ${c.rainStatus}.`)
+    lines.push(`🌡 Temperatura média ${c.monthName}: ${c.current.tempAvg}°C vs ${c.lastYear.tempAvg}°C ano passado (${tSign}${c.tempDelta}°C). Status: ${c.tempStatus}.`)
+  }
+  if (s) {
+    lines.push(`🌍 Solo (SoilGrids 250m): pH ${s.ph} (${s.phStatus}), MO ${s.organicMatter}%, argila ${s.clay}%, textura ${s.texture}.`)
+  }
+  if (b) {
+    lines.push(`📊 Benchmark IBGE (${b.source}): produtividade média de ${primaryCrop} em ${city}: ${b.city?.yieldSc ?? '—'} sc/ha | Estado ${state}: ${b.stateYieldSc} sc/ha.`)
+  }
+
+  const contextString = lines.join('\n')
+
+  // Also build suggested questions for the chat interface
+  const suggestions: string[] = []
+  if (f && f.nearby50 > 0) suggestions.push(`Há ${f.nearby50} focos de queimada a até 50km. Devo me preocupar com fumaça e estresse nas culturas?`)
+  if (c && c.rainStatus === 'seco') suggestions.push(`A chuva de ${c.monthName} está ${Math.abs(c.rainDelta)}% abaixo do ano passado. Como proteger as culturas?`)
+  if (s && s.ph < 5.5) suggestions.push(`O solo tem pH ${s.ph} (${s.phStatus}). Qual a dose de calcário para corrigir?`)
+  if (c && c.tempStatus === 'quente') suggestions.push(`Temperatura ${c.tempDelta}°C acima do histórico. Quais culturas sofrem mais com esse calor?`)
+  suggestions.push(`Analise todos os alertas da minha fazenda e me dê as 3 ações prioritárias para esta semana`)
+
+  return NextResponse.json({ contextString, suggestions, fires: f, climate: c, soil: s, ibge: b })
+}
