@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   Cloud, Sprout, Map, BarChart2, Droplets, FlaskConical,
-  CalendarDays, FileText, Settings, Leaf, Bot,
+  CalendarDays, FileText, Settings, Leaf, Bot, X,
 } from 'lucide-react'
 
 const nav = [
@@ -42,14 +42,26 @@ const nav = [
   },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname()
 
-  return (
-    <aside className="w-52 flex-shrink-0 border-r border-stone-200 bg-white flex flex-col overflow-y-auto">
-      <div className="flex items-center gap-2 px-4 py-3.5 border-b border-stone-200">
-        <Leaf className="w-5 h-5 text-green-700" />
-        <span className="font-semibold text-sm text-stone-800">CampoClima</span>
+  const content = (
+    <aside className="w-52 flex-shrink-0 border-r border-stone-200 bg-white flex flex-col h-full overflow-y-auto">
+      <div className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-stone-200">
+        <div className="flex items-center gap-2">
+          <Leaf className="w-5 h-5 text-green-700" />
+          <span className="font-semibold text-sm text-stone-800">CampoClima</span>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="sm:hidden text-stone-400 hover:text-stone-700 transition-colors p-0.5">
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <div className="px-4 py-3 border-b border-stone-100">
@@ -70,6 +82,7 @@ export function Sidebar() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={onClose}
                   className={cn(
                     'flex items-center gap-2.5 px-4 py-2 text-sm transition-colors',
                     active
@@ -88,5 +101,24 @@ export function Sidebar() {
         ))}
       </nav>
     </aside>
+  )
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="hidden sm:flex">
+        {content}
+      </div>
+
+      {/* Mobile drawer */}
+      {open && (
+        <div className="sm:hidden fixed inset-0 z-50 flex">
+          <div className="fixed inset-0 bg-black/40" onClick={onClose} />
+          <div className="relative flex w-52 flex-col">
+            {content}
+          </div>
+        </div>
+      )}
+    </>
   )
 }

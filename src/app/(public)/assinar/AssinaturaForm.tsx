@@ -178,7 +178,7 @@ export default function AssinaturaForm({ planId, annual }: { planId: PlanId; ann
   return (
     <div className="min-h-screen bg-stone-50">
       {/* NAV */}
-      <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-stone-100">
+      <nav className="flex items-center justify-between px-4 sm:px-8 py-4 bg-white border-b border-stone-100">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-7 h-7 bg-green-800 rounded-md flex items-center justify-center">
             <Leaf className="w-3.5 h-3.5 text-white" />
@@ -190,7 +190,7 @@ export default function AssinaturaForm({ planId, annual }: { planId: PlanId; ann
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-10 grid grid-cols-[1fr_380px] gap-8 items-start">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 grid grid-cols-1 sm:grid-cols-[1fr_360px] gap-6 sm:gap-8 items-start">
 
         {/* FORMULÁRIO */}
         <div className="space-y-6">
@@ -345,7 +345,7 @@ export default function AssinaturaForm({ planId, annual }: { planId: PlanId; ann
         </div>
 
         {/* RESUMO DO PEDIDO */}
-        <div className="space-y-4 sticky top-6">
+        <div className="space-y-4 sm:sticky sm:top-6">
           <div className="bg-white rounded-2xl border border-stone-200 p-5">
             <p className="text-xs text-stone-400 mb-3 uppercase tracking-wide font-medium">Resumo do pedido</p>
 
