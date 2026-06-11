@@ -89,21 +89,8 @@ export default function PrecosPage() {
   const [loading, setLoading] = useState<string | null>(null)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
-  async function handleCheckout(planId: string) {
-    setLoading(planId)
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, annual }),
-      })
-      const data = await res.json()
-      if (data.init_point) window.location.href = data.init_point
-    } catch {
-      alert('Erro ao iniciar checkout. Tente novamente.')
-    } finally {
-      setLoading(null)
-    }
+  function handleCheckout(planId: string) {
+    window.location.href = `/assinar?plano=${planId}&anual=${annual ? '1' : '0'}`
   }
 
   return (

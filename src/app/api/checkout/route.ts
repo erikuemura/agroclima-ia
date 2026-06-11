@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSubscription, PLANS, PlanId } from '@/lib/mercadopago'
+import { mp, PLANS, PlanId } from '@/lib/mercadopago'
+import { PreApproval } from 'mercadopago'
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,20 +8,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Mercado Pago não configurado' }, { status: 503 })
     }
 
-    const { planId, annual, payerEmail } = await req.json()
+    const { planId, annual, payerEmail, cardTokenId, payer } = await req.json()
 
     if (!planId || !(planId in PLANS)) {
       return NextResponse.json({ error: 'Plano inválido' }, { status: 400 })
     }
 
-    const subscription = await createSubscription(planId as PlanId, !!annual, payerEmail)
+    const plan    = PLANS[planId as PlanId]
+    const pricing = annual ? plan.annual : plan.monthly
+    const reason  = annual
+      ? `${plan.label} — Mensal (contrato anual)`
+      : `${plan.label} — Mensal`
+    const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? ''
+
+    const preApproval = new PreApproval(mp)
+
+    const body: Record<string, unknown> = {
+      reason,
+      external_reference: `${planId}_${annual ? 'annual' : 'monthly'}`,
+      payer_email: payerEmail ?? payer?.email,
+      auto_recurring: {
+        frequency:          pricing.frequency,
+        frequency_type:     pricing.frequency_type,
+        transaction_amount: pricing.amount,
+        currency_id:        'BRL',
+      },
+      back_url: `${appUrl}/app?checkout=success`,
+      status:   'pending',
+    }
+
+    // Se vier token do cartão, inclui para criar assinatura já com cartão vinculado
+    if (cardTokenId) {
+      body.card_token_id = cardTokenId
+    }
+
+    // Dados do pagador (endereço, CPF, telefone)
+    if (payer) {
+      body.payer = payer
+    }
+
+    const result = await preApproval.create({ body: body as any })
 
     return NextResponse.json({
-      init_point: subscription.init_point,
-      id: subscription.id,
+      init_point: result.init_point,
+      id:         result.id,
+      status:     result.status,
     })
-  } catch (err) {
-    console.error('[checkout]', err)
-    return NextResponse.json({ error: 'Erro ao criar assinatura' }, { status: 500 })
+  } catch (err: any) {
+    console.error('[checkout]', err?.message ?? err)
+    return NextResponse.json({ error: err?.message ?? 'Erro ao criar assinatura' }, { status: 500 })
   }
 }
