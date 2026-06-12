@@ -6,19 +6,19 @@ import { ShieldCheck, Users, CreditCard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/admin', label: 'Usuários', icon: Users },
-  { href: '/admin/pagamentos', label: 'Pagamentos', icon: CreditCard },
+  { href: '/backoffice', label: 'Usuários', icon: Users },
+  { href: '/backoffice/pagamentos', label: 'Pagamentos', icon: CreditCard },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   // A tela de login não usa o shell do backoffice
-  if (pathname === '/admin/login') return <>{children}</>
+  if (pathname === '/backoffice/login') return <>{children}</>
 
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' })
-    window.location.href = '/admin/login'
+    window.location.href = '/backoffice/login'
   }
 
   return (

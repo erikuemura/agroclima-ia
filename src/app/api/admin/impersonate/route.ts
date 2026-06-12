@@ -6,7 +6,7 @@ import { DEMO_PROFILES, type DemoProfileId } from '@/lib/demo-profiles'
 // Define o cookie de perfil + flag de impersonation e redireciona ao /app.
 export async function GET(req: Request) {
   if (!(await isAdminRequest(req))) {
-    return NextResponse.redirect(new URL('/admin/login', req.url))
+    return NextResponse.redirect(new URL('/backoffice/login', req.url))
   }
 
   const { searchParams } = new URL(req.url)

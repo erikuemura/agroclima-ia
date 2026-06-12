@@ -11,9 +11,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Backoffice não configurado (ADMIN_PASSWORD ausente)' }, { status: 503 })
   }
 
-  const { password } = await req.json().catch(() => ({}))
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 })
+  const { username, password } = await req.json().catch(() => ({}))
+  const expectedUser = process.env.ADMIN_USER ?? 'Admin'
+  if (username !== expectedUser || password !== process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'Usuário ou senha incorretos' }, { status: 401 })
   }
 
   const token = await adminToken()

@@ -14,7 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   async function exitImpersonation() {
     await fetch('/api/admin/impersonate', { method: 'DELETE' })
-    window.location.href = '/admin'
+    window.location.href = '/backoffice'
   }
 
   return (

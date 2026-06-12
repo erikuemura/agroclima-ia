@@ -5,14 +5,14 @@ import { adminToken, ADMIN_COOKIE } from '@/lib/admin-auth'
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  // Backoffice: /admin/* exige sessão de admin (exceto a tela de login)
+  // Backoffice: /backoffice/* exige sessão de admin (exceto a tela de login)
   const { pathname } = request.nextUrl
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  if (pathname.startsWith('/backoffice') && pathname !== '/backoffice/login') {
     const expected = await adminToken()
     const session = request.cookies.get(ADMIN_COOKIE)?.value
     if (!expected || session !== expected) {
       const url = request.nextUrl.clone()
-      url.pathname = '/admin/login'
+      url.pathname = '/backoffice/login'
       return NextResponse.redirect(url)
     }
     return supabaseResponse
