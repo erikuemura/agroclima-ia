@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShieldCheck, Users, CreditCard, Wallet, LogOut } from 'lucide-react'
+import { ShieldCheck, Users, CreditCard, Wallet, Activity, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
   { href: '/backoffice', label: 'Usuários', icon: Users },
   { href: '/backoffice/financeiro', label: 'Financeiro', icon: Wallet },
+  { href: '/backoffice/atividade', label: 'Atividade', icon: Activity },
   { href: '/backoffice/pagamentos', label: 'Assinaturas', icon: CreditCard },
 ]
 

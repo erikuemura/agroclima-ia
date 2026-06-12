@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { mp } from '@/lib/mercadopago'
 import { Payment, PreApproval } from 'mercadopago'
 import { createHmac, timingSafeEqual } from 'crypto'
+import { recordEvent } from '@/lib/server-events'
 
 // Valida o header x-signature do Mercado Pago (formato "ts=...,v1=...").
 // Manifest oficial: id:{data.id};request-id:{x-request-id};ts:{ts};
@@ -48,6 +49,14 @@ export async function POST(req: NextRequest) {
         amount: result.transaction_amount,
       })
 
+      recordEvent('mp_webhook', result.payer?.email ?? 'desconhecido', {
+        kind: 'payment',
+        paymentId: String(result.id ?? ''),
+        status: result.status ?? null,
+        statusDetail: result.status_detail ?? null,
+        amount: result.transaction_amount ?? null,
+      })
+
       if (result.status === 'approved') {
         // TODO: confirmar cobrança recorrente no Supabase
         // await supabase.from('subscriptions').update({ status: 'active', last_payment: new Date() })
@@ -67,6 +76,14 @@ export async function POST(req: NextRequest) {
         email: subscription.payer_email,
         externalRef: subscription.external_reference,
         nextPayment: subscription.next_payment_date,
+      })
+
+      recordEvent('mp_webhook', subscription.payer_email ?? 'desconhecido', {
+        kind: 'subscription',
+        subscriptionId: String(subscription.id ?? ''),
+        status: subscription.status ?? null,
+        reason: subscription.reason ?? null,
+        nextPayment: subscription.next_payment_date ?? null,
       })
 
       // TODO: sincronizar status da assinatura no Supabase

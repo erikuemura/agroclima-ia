@@ -4,6 +4,7 @@ import { kcFor, waterBalanceFor } from '../water-balance'
 import { computeHealthScore } from '../health-score'
 import { stormInsights, sortInsights } from '../insights'
 import { lossFromWaterDeficit, formatBRL, matchCommodity, revenueEstimate } from '@/lib/finance'
+import { estimateAiCostBRL } from '@/lib/server-events'
 import type { WeatherCurrent, WeatherDay, Crop } from '@/types'
 
 const sojaFloracao: Crop = {
@@ -122,6 +123,17 @@ describe('motor financeiro', () => {
   it('receita estimada usa preço e produtividade default', () => {
     const rev = revenueEstimate(sojaFloracao, { soja: 120, milho: 55 })
     expect(rev).toBe(100 * 60 * 120)
+  })
+
+  it('custo de IA: sonnet > haiku, imagem encarece, custo > 0', () => {
+    const haiku = estimateAiCostBRL('claude-haiku-4-5', 4000, 2000, false)
+    const sonnet = estimateAiCostBRL('claude-sonnet-4-6', 4000, 2000, false)
+    const sonnetImg = estimateAiCostBRL('claude-sonnet-4-6', 4000, 2000, true)
+    expect(haiku).toBeGreaterThan(0)
+    expect(sonnet).toBeGreaterThan(haiku)
+    expect(sonnetImg).toBeGreaterThan(sonnet)
+    // sanity: 1.000 tokens in + 500 out no haiku ≈ R$0,02 — nunca reais inteiros
+    expect(haiku).toBeLessThan(0.1)
   })
 
   it('formatBRL compacta valores grandes', () => {

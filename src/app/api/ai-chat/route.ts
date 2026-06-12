@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getDemoProfileFromCookie } from '@/lib/demo-profiles'
 import { rateLimit } from '@/lib/rate-limit'
+import { recordEvent, estimateAiCostBRL } from '@/lib/server-events'
 
 const client = new Anthropic()
 
@@ -86,11 +87,23 @@ ${farmContext ? farmContext + '\n' : ''}REGRAS:
           messages: apiMessages,
         })
 
+        let outputChars = 0
         for await (const chunk of s) {
           if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+            outputChars += chunk.delta.text.length
             controller.enqueue(encoder.encode(chunk.delta.text))
           }
         }
+
+        // Telemetria de custo de IA por cliente (COGS) — visível no backoffice
+        const inputChars = systemText.length + history.reduce((sum, m) => sum + m.content.length, 0)
+        recordEvent('ai_usage', profile.id, {
+          model: model.includes('sonnet') ? 'sonnet' : 'haiku',
+          hasImage: !!imageBase64,
+          inputChars,
+          outputChars,
+          costBRL: estimateAiCostBRL(model, inputChars, outputChars, !!imageBase64),
+        })
       } catch {
         controller.enqueue(encoder.encode('\n\n[Erro ao gerar resposta. Tente novamente.]'))
       } finally {

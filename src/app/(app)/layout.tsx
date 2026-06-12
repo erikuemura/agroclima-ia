@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 
@@ -11,6 +12,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setImpersonating(document.cookie.includes('admin_impersonating=1'))
   }, [])
+
+  // Heartbeat de engajamento (não conta navegação em modo suporte)
+  const pathname = usePathname()
+  useEffect(() => {
+    if (document.cookie.includes('admin_impersonating=1')) return
+    const body = JSON.stringify({ path: pathname })
+    if (navigator.sendBeacon) navigator.sendBeacon('/api/track-usage', new Blob([body], { type: 'application/json' }))
+    else fetch('/api/track-usage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }).catch(() => {})
+  }, [pathname])
 
   async function exitImpersonation() {
     await fetch('/api/admin/impersonate', { method: 'DELETE' })

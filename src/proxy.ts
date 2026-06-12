@@ -7,13 +7,17 @@ export async function proxy(request: NextRequest) {
 
   // Backoffice: /backoffice/* exige sessão de admin (exceto a tela de login)
   const { pathname } = request.nextUrl
-  if (pathname.startsWith('/backoffice') && pathname !== '/backoffice/login') {
-    const expected = await adminToken()
-    const session = request.cookies.get(ADMIN_COOKIE)?.value
-    if (!expected || session !== expected) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/backoffice/login'
-      return NextResponse.redirect(url)
+  if (pathname.startsWith('/backoffice')) {
+    // Nunca indexar o backoffice (nem a tela de login)
+    supabaseResponse.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    if (pathname !== '/backoffice/login') {
+      const expected = await adminToken()
+      const session = request.cookies.get(ADMIN_COOKIE)?.value
+      if (!expected || session !== expected) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/backoffice/login'
+        return NextResponse.redirect(url)
+      }
     }
     return supabaseResponse
   }
