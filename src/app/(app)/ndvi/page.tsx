@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, Satellite } from 'lucide-react'
 import { FIELDS, NDVI_COLOR, NDVI_LABEL } from '@/lib/fields-data'
+import { NdviZonesCard } from '@/components/dashboard/NdviZonesCard'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
 
 // Série temporal NDVI simulada (12 meses)
 const NDVI_HISTORY: Record<string, { month: string; ndvi: number; prev: number }[]> = {
@@ -66,6 +68,7 @@ const anomalySeverityStyle = {
 }
 
 export default function NdviPage() {
+  const profile = getDemoProfileClient()
   const [selectedField, setSelectedField] = useState('t1')
   const field = FIELDS.find(f => f.id === selectedField)!
   const history = NDVI_HISTORY[selectedField]
@@ -91,6 +94,9 @@ export default function NdviPage() {
           Última imagem: 08 jun 2026
         </div>
       </div>
+
+      {/* Zonas de produtividade — Sentinel-2 real */}
+      <NdviZonesCard lat={profile.farm.lat} lon={profile.farm.lon} />
 
       {/* Seletor de talhão */}
       <div className="flex gap-2 flex-wrap">

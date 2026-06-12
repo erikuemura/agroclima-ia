@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import {
-  Activity, AlertTriangle, CheckCircle2, Info, ArrowRight, Sparkles, CloudRain,
+  Activity, AlertTriangle, CheckCircle2, Info, ArrowRight, Sparkles, CloudRain, Bell, BellOff,
 } from 'lucide-react'
+import { pushSupported, pushEnabled, enablePush, disablePush, notifyP1Insights } from '@/lib/push'
 import type { Insight, HealthScore } from '@/types'
 import { cn } from '@/lib/utils'
 import { formatBRL, pricesFromApi, type CommodityPrices } from '@/lib/finance'
@@ -54,8 +55,10 @@ export function ExecutivePanel() {
   const [data, setData] = useState<InsightsResponse | null>(null)
   const [localInsights, setLocalInsights] = useState<Insight[]>([])
   const [pendingOps, setPendingOps] = useState(0)
+  const [notifOn, setNotifOn] = useState(false)
 
   useEffect(() => {
+    setNotifOn(pushEnabled())
     let prices: CommodityPrices | null = null
     fetch('/api/commodities').then(r => r.json()).then(d => { prices = pricesFromApi(d) }).catch(() => {})
       .finally(() => {
@@ -66,10 +69,19 @@ export function ExecutivePanel() {
             const local = buildLocalInsights(prices)
             setLocalInsights(local)
             setPendingOps(local.filter(i => i.category === 'operações').length)
+            // dispara notificação para insights P1 novos (se habilitado)
+            notifyP1Insights([...d.insights, ...local]).catch(() => {})
           })
           .catch(() => {})
       })
   }, [])
+
+  async function toggleNotifications() {
+    if (notifOn) { disablePush(); setNotifOn(false); return }
+    const ok = await enablePush()
+    setNotifOn(ok)
+    if (ok && data) notifyP1Insights([...data.insights, ...localInsights]).catch(() => {})
+  }
 
   if (!data) {
     return (
@@ -154,9 +166,20 @@ export function ExecutivePanel() {
       {/* Insights prioritários */}
       {priority.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-stone-600 mb-3 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-purple-500" /> Insights prioritários
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-stone-600 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-purple-500" /> Insights prioritários
+            </h3>
+            {pushSupported() && (
+              <button onClick={toggleNotifications}
+                className={cn('flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border transition-colors',
+                  notifOn ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-stone-400 border-stone-200 hover:text-stone-600')}
+                title={notifOn ? 'Alertas P1 ativos neste dispositivo' : 'Receber alertas P1 neste dispositivo'}>
+                {notifOn ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
+                {notifOn ? 'Alertas ativos' : 'Ativar alertas'}
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {priority.map(insight => (
               <div key={insight.id} className={cn('rounded-xl border p-3.5', sevBg[insight.severity])}>

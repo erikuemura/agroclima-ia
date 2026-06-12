@@ -1,4 +1,4 @@
-const CACHE = 'campoclima-v3'
+const CACHE = 'campoclima-v4'
 
 // Rotas que variam por cookie (perfil demo) ou são streaming — nunca cachear
 const UNCACHEABLE_API = ['/api/farm-intelligence', '/api/ai-chat', '/api/ai-alerts']
@@ -23,6 +23,35 @@ self.addEventListener('activate', e => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+  )
+})
+
+// Clique em notificação → abre/foca a página da ação
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const url = e.notification.data?.url || '/app'
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if ('focus' in client) { client.navigate(url); return client.focus() }
+      }
+      return clients.openWindow(url)
+    })
+  )
+})
+
+// Web Push (pronto para VAPID — payload JSON {title, body, url})
+self.addEventListener('push', e => {
+  if (!e.data) return
+  let payload = {}
+  try { payload = e.data.json() } catch { payload = { title: 'CampoClima', body: e.data.text() } }
+  e.waitUntil(
+    self.registration.showNotification(payload.title || 'CampoClima', {
+      body: payload.body || '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: payload.url || '/app' },
+    })
   )
 })
 
