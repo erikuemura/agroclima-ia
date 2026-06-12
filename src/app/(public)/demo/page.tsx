@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Leaf, ArrowRight, Check, Loader2 } from 'lucide-react'
 import { DEMO_PROFILES, type DemoProfileId } from '@/lib/demo-profiles'
+import { trackEvent } from '@/lib/analytics'
 
 const PROFILES = [
   {
@@ -39,6 +40,7 @@ export default function DemoPage() {
 
   function enter(id: DemoProfileId) {
     setLoading(id)
+    trackEvent('demo_started', { profile: id })
     document.cookie = `demo_profile=${id}; path=/; max-age=86400`
     router.push('/app')
   }

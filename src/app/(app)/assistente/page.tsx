@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Bot, Send, Loader2, User, Camera, X, ImageIcon, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { getDemoProfileClient } from '@/lib/demo-profiles'
 import { localContextString } from '@/lib/intelligence/local-insights'
+import { trackEvent } from '@/lib/analytics'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -105,6 +106,11 @@ export default function AssistentePage() {
 
     const controller = new AbortController()
     abortRef.current = controller
+
+    trackEvent('ai_chat_message', {
+      hasImage: !!imageBase64,
+      fromCard: new URLSearchParams(window.location.search).has('q'),
+    })
 
     try {
       const res = await fetch('/api/ai-chat', {

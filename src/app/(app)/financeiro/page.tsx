@@ -6,6 +6,7 @@ import {
   Wallet, TrendingUp, PiggyBank, Plus, Trash2, Check, Bot, Share2, Bell,
 } from 'lucide-react'
 import { readPriceTargets, writePriceTargets, type PriceTarget } from '@/lib/stores'
+import { trackEvent } from '@/lib/analytics'
 import { useRouter } from 'next/navigation'
 import { getDemoProfileClient } from '@/lib/demo-profiles'
 import {
@@ -125,7 +126,7 @@ export default function FinanceiroPage() {
   function toggleFollowed(alertId: string, saving: number) {
     const next = { ...followed }
     if (next[alertId] != null) delete next[alertId]
-    else next[alertId] = saving
+    else { next[alertId] = saving; trackEvent('alert_followed', { category: 'financeiro' }) }
     setFollowed(next)
     localStorage.setItem(FOLLOWED_KEY, JSON.stringify(next))
   }

@@ -7,6 +7,7 @@ import {
   Activity, AlertTriangle, CheckCircle2, Info, ArrowRight, Sparkles, CloudRain, Bell, BellOff,
 } from 'lucide-react'
 import { pushSupported, pushEnabled, enablePush, disablePush, notifyP1Insights } from '@/lib/push'
+import { trackEvent } from '@/lib/analytics'
 import type { Insight, HealthScore } from '@/types'
 import { cn } from '@/lib/utils'
 import { formatBRL, pricesFromApi, type CommodityPrices } from '@/lib/finance'
@@ -80,6 +81,7 @@ export function ExecutivePanel() {
     if (notifOn) { disablePush(); setNotifOn(false); return }
     const ok = await enablePush()
     setNotifOn(ok)
+    if (ok) trackEvent('push_enabled')
     if (ok && data) notifyP1Insights([...data.insights, ...localInsights]).catch(() => {})
   }
 
@@ -202,6 +204,7 @@ export function ExecutivePanel() {
                       ) : <span className="text-[10px] text-stone-400">{insight.source}</span>}
                       {insight.action && (
                         <Link href={insight.action.href}
+                          onClick={() => trackEvent('insight_action_click', { category: insight.category })}
                           className="text-xs font-medium text-green-700 flex items-center gap-1 hover:underline">
                           {insight.action.label} <ArrowRight className="w-3 h-3" />
                         </Link>

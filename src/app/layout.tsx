@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -63,6 +65,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} bg-stone-50 text-stone-900 h-full antialiased`}>
         <ServiceWorkerRegistrar />
         {children}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

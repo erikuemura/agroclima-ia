@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { initMercadoPago, CardPayment } from '@mercadopago/sdk-react'
 import { Leaf, ShieldCheck, Lock, Check, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
+import { trackEvent } from '@/lib/analytics'
 
 const PLANS = {
   produtor: {
@@ -113,6 +114,7 @@ export default function AssinaturaForm({ planId, annual }: { planId: PlanId; ann
   async function handleCardSubmit(formData: { token: string; installments: number; payment_method_id: string; issuer_id: string }) {
     setLoading(true)
     setError('')
+    trackEvent('checkout_started', { plan: planId, annual })
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
