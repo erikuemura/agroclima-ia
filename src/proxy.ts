@@ -1,8 +1,22 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { adminToken, ADMIN_COOKIE } from '@/lib/admin-auth'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+
+  // Backoffice: /admin/* exige sessão de admin (exceto a tela de login)
+  const { pathname } = request.nextUrl
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    const expected = await adminToken()
+    const session = request.cookies.get(ADMIN_COOKIE)?.value
+    if (!expected || session !== expected) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
 
   // Se Supabase não estiver configurado, deixa passar
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return supabaseResponse
