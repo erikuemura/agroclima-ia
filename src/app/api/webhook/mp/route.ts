@@ -4,6 +4,37 @@ import { Payment, PreApproval } from 'mercadopago'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { recordEvent } from '@/lib/server-events'
 
+// Sincroniza a assinatura no Supabase (service role; best-effort).
+// Tabela `subscriptions` — docs/migrations/003_launch_core.sql
+async function upsertSubscription(row: {
+  mp_subscription_id: string
+  payer_email?: string | null
+  plan_id?: string | null
+  status?: string | null
+  amount?: number | null
+  next_payment?: string | null
+  last_payment_at?: string | null
+}): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return
+  try {
+    await fetch(`${url}/rest/v1/subscriptions?on_conflict=mp_subscription_id`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({ ...row, updated_at: new Date().toISOString() }),
+      signal: AbortSignal.timeout(5000),
+    })
+  } catch (err) {
+    console.warn('[webhook/mp] sync supabase falhou:', err instanceof Error ? err.message : err)
+  }
+}
+
 // Valida o header x-signature do Mercado Pago (formato "ts=...,v1=...").
 // Manifest oficial: id:{data.id};request-id:{x-request-id};ts:{ts};
 function validateSignature(req: NextRequest, dataId: string | undefined): boolean {
@@ -57,10 +88,14 @@ export async function POST(req: NextRequest) {
         amount: result.transaction_amount ?? null,
       })
 
-      if (result.status === 'approved') {
-        // TODO: confirmar cobrança recorrente no Supabase
-        // await supabase.from('subscriptions').update({ status: 'active', last_payment: new Date() })
-        //   .eq('mp_subscription_id', result.metadata?.preapproval_id)
+      if (result.status === 'approved' && result.metadata?.preapproval_id) {
+        await upsertSubscription({
+          mp_subscription_id: String(result.metadata.preapproval_id),
+          payer_email: result.payer?.email ?? null,
+          status: 'authorized',
+          amount: result.transaction_amount ?? null,
+          last_payment_at: new Date().toISOString(),
+        })
       }
     }
 
@@ -86,15 +121,13 @@ export async function POST(req: NextRequest) {
         nextPayment: subscription.next_payment_date ?? null,
       })
 
-      // TODO: sincronizar status da assinatura no Supabase
-      // const planId = subscription.external_reference?.split('_')[0]
-      // await supabase.from('subscriptions').upsert({
-      //   mp_subscription_id: subscription.id,
-      //   user_email: subscription.payer_email,
-      //   plan_id: planId,
-      //   status: subscription.status,
-      //   next_payment: subscription.next_payment_date,
-      // })
+      await upsertSubscription({
+        mp_subscription_id: String(subscription.id ?? ''),
+        payer_email: subscription.payer_email ?? null,
+        plan_id: subscription.external_reference?.split('_')[0] ?? null,
+        status: subscription.status ?? null,
+        next_payment: subscription.next_payment_date?.slice(0, 10) ?? null,
+      })
     }
 
     return NextResponse.json({ received: true })

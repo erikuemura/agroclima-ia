@@ -3,7 +3,7 @@ import type { Farm, Crop, Alert } from '@/types'
 export type DemoProfileId = 'pequeno' | 'medio' | 'grande'
 
 export interface DemoProfile {
-  id: DemoProfileId
+  id: string // demo: 'pequeno'|'medio'|'grande' · contas reais: 'real-<farmId>'
   label: string
   role: string
   description: string
@@ -223,8 +223,21 @@ export const DEMO_PROFILES: Record<DemoProfileId, DemoProfile> = {
   },
 }
 
+function parseRealProfile(cookieHeader: string): DemoProfile | null {
+  const match = cookieHeader.match(/farm_profile=([^;]+)/)
+  if (!match) return null
+  try {
+    const p = JSON.parse(decodeURIComponent(match[1]))
+    if (p?.farm?.lat != null && Array.isArray(p?.crops)) return p as DemoProfile
+  } catch { /* cookie corrompido — ignora */ }
+  return null
+}
+
 export function getDemoProfileFromCookie(cookieHeader: string | null): DemoProfile {
   if (!cookieHeader) return DEMO_PROFILES.medio
+  // Fazenda real (usuário autenticado) tem prioridade sobre demo
+  const real = parseRealProfile(cookieHeader)
+  if (real) return real
   const match = cookieHeader.match(/demo_profile=([^;]+)/)
   const id = (match?.[1] ?? 'medio') as DemoProfileId
   return DEMO_PROFILES[id] ?? DEMO_PROFILES.medio
@@ -232,7 +245,5 @@ export function getDemoProfileFromCookie(cookieHeader: string | null): DemoProfi
 
 export function getDemoProfileClient(): DemoProfile {
   if (typeof document === 'undefined') return DEMO_PROFILES.medio
-  const match = document.cookie.match(/demo_profile=([^;]+)/)
-  const id = (match?.[1] ?? 'medio') as DemoProfileId
-  return DEMO_PROFILES[id] ?? DEMO_PROFILES.medio
+  return getDemoProfileFromCookie(document.cookie)
 }

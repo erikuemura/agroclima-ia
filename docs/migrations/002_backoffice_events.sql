@@ -5,7 +5,7 @@
 
 create table if not exists backoffice_events (
   id         uuid primary key default gen_random_uuid(),
-  type       text not null check (type in ('ai_usage', 'app_activity', 'mp_webhook')),
+  type       text not null check (type in ('ai_usage', 'app_activity', 'mp_webhook', 'lead')),
   profile    text not null,           -- id do perfil/cliente ou e-mail (mp_webhook)
   data       jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Leaf, ArrowRight, Play, ShieldCheck, Clock, Smartphone, Brain, Check } from 'lucide-react'
+import { LeadCapture } from '@/components/site/LeadCapture'
+import { WhatsAppButton } from '@/components/site/WhatsAppButton'
 
 export const metadata: Metadata = {
   title: 'CampoClima — Inteligência para o campo',
@@ -316,6 +318,96 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* DADOS OFICIAIS — prova de credibilidade */}
+      <section className="px-4 sm:px-8 py-12 border-y border-stone-100 bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-xs uppercase tracking-widest text-stone-400 font-medium mb-6">
+            Construído sobre dados oficiais e científicos
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+            {[
+              { name: 'IBGE', desc: 'produtividade municipal' },
+              { name: 'INPE', desc: 'monitoramento de queimadas' },
+              { name: 'NASA POWER', desc: 'climatologia 30 anos' },
+              { name: 'Sentinel-2', desc: 'satélite Copernicus/ESA' },
+              { name: 'Open-Meteo', desc: 'previsão meteorológica' },
+              { name: 'Claude IA', desc: 'Anthropic' },
+            ].map(({ name, desc }) => (
+              <div key={name} className="text-center">
+                <p className="text-sm font-semibold text-stone-600">{name}</p>
+                <p className="text-[10px] text-stone-400">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PREÇOS RESUMIDOS */}
+      <section className="px-4 sm:px-8 py-16 sm:py-24">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-medium text-stone-900 mb-3">Preço de lavoura, não de multinacional</h2>
+            <p className="text-stone-500 text-sm sm:text-base">Comece grátis. Evolua quando fizer sentido para a sua operação.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { name: 'Gratuito', price: 'R$ 0', period: 'para sempre', desc: '1 fazenda · clima 10 dias · 5 consultas IA/mês', featured: false },
+              { name: 'Produtor', price: 'R$ 49', period: '/mês', desc: 'Todos os 11 módulos · IA ilimitada · NDVI · relatórios PDF', featured: true },
+              { name: 'Premium', price: 'R$ 129', period: '/mês', desc: 'Multi-usuário · API · suporte prioritário no WhatsApp', featured: false },
+            ].map(p => (
+              <Link key={p.name} href="/precos"
+                className={`rounded-2xl border p-6 text-center transition-all hover:shadow-md ${
+                  p.featured ? 'border-green-700 bg-green-800 text-white shadow-lg shadow-green-900/10 scale-[1.02]' : 'border-stone-200 bg-white'
+                }`}>
+                <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${p.featured ? 'text-green-300' : 'text-stone-400'}`}>{p.name}</p>
+                <p className={`text-3xl font-semibold mb-0.5 ${p.featured ? 'text-white' : 'text-stone-900'}`}>
+                  {p.price}<span className={`text-sm font-normal ${p.featured ? 'text-green-300' : 'text-stone-400'}`}>{p.period}</span>
+                </p>
+                <p className={`text-xs leading-relaxed mt-3 ${p.featured ? 'text-green-200' : 'text-stone-500'}`}>{p.desc}</p>
+                <span className={`inline-block text-xs font-medium mt-4 ${p.featured ? 'text-white underline' : 'text-green-700'}`}>
+                  Ver detalhes →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="px-4 sm:px-8 py-16 bg-stone-50">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-medium text-stone-900 text-center mb-8">Perguntas frequentes</h2>
+          <div className="space-y-3">
+            {[
+              { q: 'Funciona sem internet no campo?', a: 'Sim. O CampoClima é um PWA: instale no celular e os últimos dados ficam disponíveis offline. Ao voltar o sinal, tudo sincroniza automaticamente.' },
+              { q: 'Preciso de agrônomo para usar?', a: 'Não. O AgroAssistente traduz os dados em recomendações práticas em português simples. Para receituário de defensivos, a plataforma orienta procurar um agrônomo com CREA — a IA complementa, não substitui.' },
+              { q: 'Atende minha região?', a: 'Sim. Clima, satélite e solo cobrem todo o Brasil. O benchmark de produtividade usa dados do IBGE do seu município.' },
+              { q: 'De onde vêm os dados?', a: 'De fontes oficiais e científicas: IBGE, INPE, NASA, satélite Sentinel-2 (Copernicus/ESA) e Open-Meteo. A IA é o Claude, da Anthropic.' },
+              { q: 'Posso cancelar quando quiser?', a: 'Sim. A assinatura é mensal via Mercado Pago, sem fidelidade. Cancelou, continua com acesso até o fim do período pago.' },
+            ].map(({ q, a }) => (
+              <details key={q} className="group bg-white border border-stone-200 rounded-xl px-5 py-4">
+                <summary className="text-sm font-medium text-stone-800 cursor-pointer list-none flex items-center justify-between">
+                  {q}
+                  <span className="text-stone-300 group-open:rotate-45 transition-transform text-lg leading-none">+</span>
+                </summary>
+                <p className="text-sm text-stone-500 leading-relaxed mt-3">{a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CAPTURA DE LEADS */}
+      <section className="px-4 sm:px-8 py-16 bg-white border-t border-stone-100">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-xl sm:text-2xl font-medium text-stone-900 mb-2">Ainda não está pronto para criar conta?</h2>
+          <p className="text-sm text-stone-500 mb-6">
+            Deixe seu contato e receba novidades e dicas de clima para a sua região. Sem spam.
+          </p>
+          <LeadCapture />
+        </div>
+      </section>
+
       {/* CTA FINAL */}
       <section className="bg-green-950 py-16 sm:py-24 px-4 sm:px-8 text-center">
         <div className="max-w-2xl mx-auto">
@@ -348,6 +440,8 @@ export default function LandingPage() {
           <a href="mailto:contato@campoclima.com.br" className="text-xs text-stone-400 hover:text-stone-600">Contato</a>
         </div>
       </footer>
+
+      <WhatsAppButton />
     </div>
   )
 }

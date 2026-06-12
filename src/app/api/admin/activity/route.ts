@@ -24,10 +24,11 @@ function daysSince(iso: string | null): number | null {
 export async function GET(req: Request) {
   if (!(await isAdminRequest(req))) return unauthorized()
 
-  const [ai, activity, mp] = await Promise.all([
+  const [ai, activity, mp, leads] = await Promise.all([
     queryEvents('ai_usage', 1000),
     queryEvents('app_activity', 2000),
     queryEvents('mp_webhook', 100),
+    queryEvents('lead', 200),
   ])
 
   const profiles = Object.values(DEMO_PROFILES).map(p => ({ id: p.id, name: p.label }))
@@ -75,6 +76,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     clients,
     mpEvents,
+    leads: leads.events.map(e => ({ at: e.at, ...e.data })),
     source: ai.source, // 'supabase' = persistido | 'memoria' = por instância (reseta no deploy)
   })
 }

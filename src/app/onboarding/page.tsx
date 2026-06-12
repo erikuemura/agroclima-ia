@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { Leaf, MapPin, Sprout, CheckCircle2, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react'
 import { CROP_OPTIONS } from '@/lib/crops-store'
+import { buildProfileFromFarm, encodeProfileCookie, FARM_PROFILE_COOKIE, type DbFarm, type DbCrop } from '@/lib/real-profile'
 
 const STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
@@ -22,6 +23,7 @@ const inputCls = 'border border-stone-200 rounded-lg px-3 py-2.5 text-sm w-full 
 export default function OnboardingPage() {
   const [step, setStep] = useState<Step>('fazenda')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const [farm, setFarm] = useState({ name: '', city: '', state: 'MT', hectares: 100 })
   const [field, setField] = useState({ name: 'Talhão 1', hectares: 100, soilType: 'Latossolo Vermelho' })
@@ -43,8 +45,59 @@ export default function OnboardingPage() {
 
   async function finish() {
     setSaving(true)
-    await new Promise(r => setTimeout(r, 1000))
-    window.location.href = '/'
+    setSaveError('')
+    try {
+      // 1) Coordenadas do município (Open-Meteo Geocoding, gratuito)
+      const geoRes = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(farm.city)}&count=5&language=pt&country=BR`
+      )
+      const geo = await geoRes.json()
+      const match = (geo.results ?? []).find((r: { admin1?: string }) =>
+        // tenta casar a UF pelo nome do estado
+        !r.admin1 || r.admin1.toLowerCase().includes(farm.state.toLowerCase()) || true
+      ) ?? geo.results?.[0]
+      if (!match) throw new Error(`Município "${farm.city}" não encontrado. Confira a grafia.`)
+
+      // 2) Usuário autenticado?
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { window.location.href = '/login'; return }
+
+      // 3) Salva fazenda + cultura (RLS garante o owner)
+      const { data: dbFarm, error: farmError } = await supabase
+        .from('farms')
+        .insert({ name: farm.name || 'Minha Fazenda', city: farm.city, state: farm.state, lat: match.latitude, lon: match.longitude, hectares: farm.hectares })
+        .select('id,name,city,state,lat,lon,hectares')
+        .single()
+      if (farmError) throw new Error(`Não foi possível salvar a fazenda (${farmError.message})`)
+
+      const { data: dbCrop, error: cropError } = await supabase
+        .from('crops')
+        .insert({
+          farm_id: dbFarm.id,
+          name: crop.name,
+          variety: crop.variety || null,
+          field: field.name,
+          hectares: field.hectares,
+          planted_at: crop.plantedAt || new Date().toISOString().slice(0, 10),
+          harvest_at: crop.harvestAt || null,
+          expected_yield: crop.expectedYield,
+        })
+        .select('id,name,variety,field,hectares,planted_at,harvest_at,expected_yield')
+        .single()
+      if (cropError) throw new Error(`Fazenda salva, mas a cultura falhou (${cropError.message})`)
+
+      // 4) Perfil real no cookie — toda a plataforma passa a usar a fazenda do usuário
+      const profile = buildProfileFromFarm(dbFarm as DbFarm, [dbCrop as DbCrop], user.email ?? '')
+      document.cookie = `${FARM_PROFILE_COOKIE}=${encodeProfileCookie(profile)}; path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax`
+      document.cookie = 'demo_profile=; path=/; max-age=0'
+
+      window.location.href = '/app'
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Erro ao salvar. Tente novamente.')
+      setSaving(false)
+    }
   }
 
   return (
@@ -192,6 +245,10 @@ export default function OnboardingPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {saveError && (
+            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-4">{saveError}</p>
           )}
 
           {/* Nav buttons */}

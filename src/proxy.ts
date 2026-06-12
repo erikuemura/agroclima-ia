@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { adminToken, ADMIN_COOKIE } from '@/lib/admin-auth'
+import { buildProfileFromFarm, encodeProfileCookie, FARM_PROFILE_COOKIE, type DbFarm, type DbCrop } from '@/lib/real-profile'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -54,6 +55,38 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  // Usuário REAL em rota protegida: garante que o perfil é a fazenda dele,
+  // não o demo. Sem cookie farm_profile → busca no banco (RLS) e reidrata;
+  // sem fazenda cadastrada → onboarding.
+  if (isProtected && user && !request.cookies.get(FARM_PROFILE_COOKIE)?.value) {
+    try {
+      const { data: farms, error } = await supabase
+        .from('farms')
+        .select('id,name,city,state,lat,lon,hectares')
+        .limit(1)
+
+      if (!error && farms && farms.length > 0) {
+        const farm = farms[0] as DbFarm
+        const { data: crops } = await supabase
+          .from('crops')
+          .select('id,name,variety,field,hectares,planted_at,harvest_at,expected_yield')
+          .eq('farm_id', farm.id)
+        const profile = buildProfileFromFarm(farm, (crops ?? []) as DbCrop[], user.email ?? '')
+        supabaseResponse.cookies.set(FARM_PROFILE_COOKIE, encodeProfileCookie(profile), {
+          path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax',
+        })
+        // demo_profile não pode mascarar a fazenda real
+        supabaseResponse.cookies.set('demo_profile', '', { path: '/', maxAge: 0 })
+      } else if (!error) {
+        // Logado e sem fazenda → completar o cadastro
+        const url = request.nextUrl.clone()
+        url.pathname = '/onboarding'
+        return NextResponse.redirect(url)
+      }
+      // error (ex.: tabela ainda não criada) → segue com demo, sem quebrar
+    } catch { /* banco indisponível — não bloqueia a navegação */ }
   }
 
   return supabaseResponse

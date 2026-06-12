@@ -10,7 +10,7 @@
 //     schema em docs/migrations/002_backoffice_events.sql
 // ─────────────────────────────────────────────────────────────
 
-export type ServerEventType = 'ai_usage' | 'app_activity' | 'mp_webhook'
+export type ServerEventType = 'ai_usage' | 'app_activity' | 'mp_webhook' | 'lead'
 
 export interface ServerEvent {
   type: ServerEventType

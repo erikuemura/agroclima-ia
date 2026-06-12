@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { Activity, Bot, Webhook, AlertTriangle } from 'lucide-react'
+import { Activity, Bot, Webhook, AlertTriangle, Mail } from 'lucide-react'
+
+interface Lead { at: string; contact?: string; kind?: string; city?: string | null }
 
 interface ClientActivity {
   profile: string
@@ -43,13 +45,14 @@ const MODULE_LABEL: Record<string, string> = {
 export default function BackofficeAtividadePage() {
   const [clients, setClients] = useState<ClientActivity[]>([])
   const [mpEvents, setMpEvents] = useState<MpEvent[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
   const [source, setSource] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch('/api/admin/activity')
       .then(r => r.json())
-      .then(d => { setClients(d.clients ?? []); setMpEvents(d.mpEvents ?? []); setSource(d.source ?? '') })
+      .then(d => { setClients(d.clients ?? []); setMpEvents(d.mpEvents ?? []); setLeads(d.leads ?? []); setSource(d.source ?? '') })
       .finally(() => setLoading(false))
   }, [])
 
@@ -146,6 +149,27 @@ export default function BackofficeAtividadePage() {
         Custo estimado: Haiku 4.5 (texto) e Sonnet 4.6 (fotos) a preço de tabela, ~4 caracteres/token, câmbio R$ 5,50.
         Compare com a mensalidade do cliente para avaliar margem.
       </p>
+
+      {/* Leads do site */}
+      <Card className="p-4">
+        <h3 className="text-sm font-medium text-stone-700 mb-1 flex items-center gap-2">
+          <Mail className="w-4 h-4 text-green-600" /> Leads do site ({leads.length})
+        </h3>
+        <p className="text-xs text-stone-400 mb-3">Contatos deixados na landing por visitantes que ainda não criaram conta.</p>
+        <div className="space-y-1">
+          {leads.map((l, i) => (
+            <div key={i} className="flex items-center gap-2 text-[11px] py-1.5 border-b border-stone-50 last:border-0">
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${l.kind === 'email' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                {l.kind === 'email' ? 'E-mail' : 'WhatsApp'}
+              </span>
+              <span className="text-stone-700 font-medium flex-1 truncate">{l.contact}</span>
+              {l.city && <span className="text-stone-400">{l.city}</span>}
+              <span className="text-stone-300 flex-shrink-0">{new Date(l.at).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          ))}
+          {leads.length === 0 && <p className="text-xs text-stone-400 text-center py-3">Nenhum lead ainda.</p>}
+        </div>
+      </Card>
 
       {/* Log de webhooks MP */}
       <Card className="p-4">
