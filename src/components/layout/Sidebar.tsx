@@ -7,33 +7,44 @@ import { getDemoProfileClient } from '@/lib/demo-profiles'
 import {
   Cloud, Sprout, Map, BarChart2, Droplets, FlaskConical,
   CalendarDays, FileText, Settings, Leaf, Bot, X, Wallet,
+  ClipboardList, Package, Target, Users, Briefcase,
 } from 'lucide-react'
 
 const nav = [
   {
     section: 'Principal',
     items: [
-      { href: '/app', label: 'Clima & alertas', icon: Cloud, dot: 'warning' },
+      { href: '/app', label: 'Painel da fazenda', icon: Cloud, dot: 'warning' },
+      { href: '/assistente', label: 'AgroAssistente IA', icon: Bot },
       { href: '/culturas', label: 'Minhas culturas', icon: Sprout },
       { href: '/talhoes', label: 'Talhões & mapa', icon: Map },
       { href: '/ndvi', label: 'NDVI & satélite', icon: BarChart2 },
     ],
   },
   {
+    section: 'Operação',
+    items: [
+      { href: '/diario', label: 'Diário de campo', icon: ClipboardList },
+      { href: '/estoque', label: 'Estoque', icon: Package },
+      { href: '/pulverizacao', label: 'Pulverização', icon: Sprout, dot: 'success' },
+      { href: '/irrigacao', label: 'Irrigação', icon: Droplets },
+      { href: '/calendario', label: 'Calendário', icon: CalendarDays },
+    ],
+  },
+  {
     section: 'Gestão',
     items: [
       { href: '/financeiro', label: 'Financeiro', icon: Wallet },
+      { href: '/planejamento', label: 'Planejamento', icon: Target },
       { href: '/solo', label: 'Análise de solo IA', icon: FlaskConical },
-      { href: '/irrigacao', label: 'Irrigação', icon: Droplets },
-      { href: '/pulverizacao', label: 'Pulverização', icon: Sprout, dot: 'success' },
-      { href: '/calendario', label: 'Calendário', icon: CalendarDays },
       { href: '/relatorios', label: 'Relatórios', icon: FileText },
     ],
   },
   {
-    section: 'IA',
+    section: 'Rede',
     items: [
-      { href: '/assistente', label: 'AgroAssistente', icon: Bot },
+      { href: '/comunidade', label: 'Comunidade', icon: Users },
+      { href: '/consultor', label: 'Modo consultor', icon: Briefcase },
     ],
   },
   {

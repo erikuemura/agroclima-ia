@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Bot, Send, Loader2, User, Camera, X, ImageIcon, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { getDemoProfileClient } from '@/lib/demo-profiles'
+import { localContextString } from '@/lib/intelligence/local-insights'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -114,7 +115,8 @@ export default function AssistentePage() {
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
           imageBase64: imageBase64 ?? undefined,
           imageMime,
-          farmContext: ctx?.contextString,
+          // Contexto server-side + dados locais (estoque, diário, pendências)
+          farmContext: [ctx?.contextString, localContextString(null)].filter(Boolean).join('\n'),
         }),
       })
       if (!res.ok || !res.body) throw new Error('Erro na API')

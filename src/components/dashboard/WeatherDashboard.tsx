@@ -16,6 +16,7 @@ import {
   formatBRL, type CommodityPrices,
 } from '@/lib/finance'
 import { CommoditiesCard } from './CommoditiesCard'
+import { ExecutivePanel } from './ExecutivePanel'
 import { RegionalBenchmark } from './RegionalBenchmark'
 import { QueimadasCard } from './QueimadasCard'
 import { ClimateHistoryCard } from './ClimateHistoryCard'
@@ -94,11 +95,14 @@ export function WeatherDashboard({ weather, alerts, crops, farm, profile }: Prop
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-stone-800">Clima & alertas</h1>
+        <h1 className="text-lg font-semibold text-stone-800">Painel da fazenda</h1>
         <p className="text-sm text-stone-400 mt-0.5">
-          Previsão e recomendações para {farm.city} — {farm.state}
+          Visão executiva, clima e recomendações para {farm.city} — {farm.state}
         </p>
       </div>
+
+      {/* Painel executivo: health score + insights + resumo diário + feed */}
+      <ExecutivePanel />
 
       {/* Métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

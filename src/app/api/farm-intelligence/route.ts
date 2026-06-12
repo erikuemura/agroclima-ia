@@ -12,12 +12,13 @@ export async function GET(req: Request) {
   // Self-fetch usa a origem da própria requisição — funciona em qualquer deploy sem env
   const base = new URL(req.url).origin
 
-  const [fires, climate, soil, ibge, commodities] = await Promise.allSettled([
+  const [fires, climate, soil, ibge, commodities, intel] = await Promise.allSettled([
     fetch(`${base}/api/queimadas?lat=${lat}&lon=${lon}&state=${state}`).then(r => r.json()),
     fetch(`${base}/api/climate-history?lat=${lat}&lon=${lon}`).then(r => r.json()),
     fetch(`${base}/api/soil-grid?lat=${lat}&lon=${lon}`).then(r => r.json()),
     fetch(`${base}/api/ibge-pam?city=${encodeURIComponent(city)}&state=${state}&crop=${encodeURIComponent(primaryCrop)}`).then(r => r.json()),
     fetch(`${base}/api/commodities`).then(r => r.json()),
+    fetch(`${base}/api/insights?profile=${profile.id}`).then(r => r.json()),
   ])
 
   const f = fires.status       === 'fulfilled' ? fires.value       : null
@@ -25,6 +26,7 @@ export async function GET(req: Request) {
   const s = soil.status        === 'fulfilled' ? soil.value        : null
   const b = ibge.status        === 'fulfilled' ? ibge.value        : null
   const m = commodities.status === 'fulfilled' ? commodities.value : null
+  const ai = intel.status      === 'fulfilled' ? intel.value       : null
 
   const lines: string[] = ['INTELIGÊNCIA ADICIONAL DA FAZENDA (dados em tempo real):']
 
@@ -58,6 +60,26 @@ export async function GET(req: Request) {
     }
   }
 
+  // Agricultural Intelligence Layer: health score + insights + doenças + balanço hídrico
+  if (ai?.healthScore) {
+    lines.push(`🩺 Saúde da fazenda: ${ai.healthScore.total}/100 (${ai.healthScore.level}) — ${ai.healthScore.components.map((cp: { label: string; score: number }) => `${cp.label} ${cp.score}`).join(', ')}.`)
+  }
+  if (ai?.diseases?.length) {
+    const top = ai.diseases.slice(0, 3).map((d: { disease: string; crop: string; level: string; score: number }) =>
+      `${d.disease} em ${d.crop}: risco ${d.level} (${d.score}/100)`).join(' | ')
+    lines.push(`🦠 Risco fitossanitário: ${top}.`)
+  }
+  if (ai?.waterBalances?.length) {
+    const wb = ai.waterBalances[0]
+    lines.push(`💧 Balanço hídrico (${wb.crop}, Kc ${wb.kc}): saldo ${wb.balance}mm (${wb.status}). Chuva prevista 5d: ${wb.forecastRain5d}mm.${wb.irrigationMm > 0 ? ` Irrigação recomendada: ${wb.irrigationMm}mm.` : ''}`)
+  }
+  if (ai?.rainReport) {
+    lines.push(`🌧 Chuva: ontem ${ai.rainReport.yesterday}mm | 7 dias ${ai.rainReport.week}mm | 30 dias ${ai.rainReport.month}mm.`)
+  }
+  if (ai?.insights?.length) {
+    lines.push(`📌 Insights ativos: ${ai.insights.slice(0, 5).map((i: { title: string }) => i.title).join(' | ')}.`)
+  }
+
   const contextString = lines.join('\n')
 
   // Also build suggested questions for the chat interface
@@ -66,6 +88,10 @@ export async function GET(req: Request) {
   if (c && c.rainStatus === 'seco') suggestions.push(`A chuva de ${c.monthName} está ${Math.abs(c.rainDelta)}% abaixo do ano passado. Como proteger as culturas?`)
   if (s && s.ph < 5.5) suggestions.push(`O solo tem pH ${s.ph} (${s.phStatus}). Qual a dose de calcário para corrigir?`)
   if (c && c.tempStatus === 'quente') suggestions.push(`Temperatura ${c.tempDelta}°C acima do histórico. Quais culturas sofrem mais com esse calor?`)
+  if (ai?.diseases?.some((d: { level: string }) => d.level === 'alto' || d.level === 'crítico')) {
+    suggestions.unshift('Tenho risco de ferrugem? O que aplicar e quando?')
+  }
+  suggestions.push('Como está minha safra? Resuma a saúde da fazenda')
   suggestions.push(`Analise todos os alertas da minha fazenda e me dê as 3 ações prioritárias para esta semana`)
 
   return NextResponse.json({ contextString, suggestions, fires: f, climate: c, soil: s, ibge: b })

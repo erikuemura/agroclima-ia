@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import {
-  Wallet, TrendingUp, PiggyBank, Plus, Trash2, Check, Bot, Share2,
+  Wallet, TrendingUp, PiggyBank, Plus, Trash2, Check, Bot, Share2, Bell,
 } from 'lucide-react'
+import { readPriceTargets, writePriceTargets, type PriceTarget } from '@/lib/stores'
 import { useRouter } from 'next/navigation'
 import { getDemoProfileClient } from '@/lib/demo-profiles'
 import {
@@ -34,6 +35,8 @@ export default function FinanceiroPage() {
   const [costs, setCosts] = useState<CostEntry[]>([])
   const [followed, setFollowed] = useState<Record<string, number>>({})
   const [newCost, setNewCost] = useState({ field: '', item: '', value: '' })
+  const [targets, setTargets] = useState<PriceTarget[]>([])
+  const [newTarget, setNewTarget] = useState({ commodity: 'soja' as PriceTarget['commodity'], value: '' })
 
   useEffect(() => {
     fetch('/api/commodities').then(r => r.json()).then(d => {
@@ -45,7 +48,29 @@ export default function FinanceiroPage() {
       setCosts(JSON.parse(localStorage.getItem(COSTS_KEY) ?? '[]'))
       setFollowed(JSON.parse(localStorage.getItem(FOLLOWED_KEY) ?? '{}'))
     } catch { /* primeiro acesso */ }
+    setTargets(readPriceTargets())
   }, [])
+
+  const COMMODITY_LABEL: Record<PriceTarget['commodity'], string> = { soja: 'Soja', milho: 'Milho', boi: 'Boi Gordo' }
+
+  function addTarget() {
+    const value = parseFloat(newTarget.value.replace(',', '.'))
+    if (!value) return
+    const t: PriceTarget = {
+      id: String(Date.now()),
+      commodity: newTarget.commodity,
+      label: COMMODITY_LABEL[newTarget.commodity],
+      target: value,
+    }
+    const next = [...targets, t]
+    setTargets(next); writePriceTargets(next)
+    setNewTarget({ ...newTarget, value: '' })
+  }
+
+  function removeTarget(id: string) {
+    const next = targets.filter(t => t.id !== id)
+    setTargets(next); writePriceTargets(next)
+  }
 
   const mainCrop = profile.crops.find(c => matchCommodity(c.name)) ?? profile.crops[0]
   const commodity = mainCrop ? matchCommodity(mainCrop.name) : null
@@ -190,6 +215,56 @@ export default function FinanceiroPage() {
           </p>
         </Card>
       )}
+
+      {/* Preço-alvo */}
+      <Card className="p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Bell className="w-4 h-4 text-green-700" />
+          <h3 className="text-sm font-medium text-stone-700">Alertas de preço-alvo</h3>
+        </div>
+        <p className="text-xs text-stone-400 mb-4">Defina o preço que você quer e o sistema avisa quando a cotação chegar lá.</p>
+
+        <div className="flex gap-2 mb-3">
+          <select value={newTarget.commodity}
+            onChange={e => setNewTarget({ ...newTarget, commodity: e.target.value as PriceTarget['commodity'] })}
+            className="border border-stone-200 rounded-lg px-2 py-1.5 text-xs">
+            <option value="soja">🌱 Soja (R$/sc)</option>
+            <option value="milho">🌽 Milho (R$/sc)</option>
+            <option value="boi">🐄 Boi Gordo (R$/@)</option>
+          </select>
+          <input placeholder="Preço-alvo" inputMode="decimal" value={newTarget.value}
+            onChange={e => setNewTarget({ ...newTarget, value: e.target.value })}
+            className="flex-1 border border-stone-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-green-500" />
+          <button onClick={addTarget}
+            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-green-700 text-white hover:bg-green-800 transition-colors">
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-1.5">
+          {targets.map(t => {
+            const current = prices?.[t.commodity] ?? 0
+            const hit = current >= t.target
+            return (
+              <div key={t.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${
+                hit ? 'bg-green-50 border-green-200' : 'bg-stone-50 border-stone-100'
+              }`}>
+                <span className="font-medium text-stone-700">{t.label}</span>
+                <span className="text-stone-400">alvo R$ {t.target.toFixed(2)}</span>
+                <span className={`ml-auto font-semibold ${hit ? 'text-green-700' : 'text-stone-500'}`}>
+                  {hit ? `🎯 Atingido! (R$ ${current.toFixed(2)})` : `hoje R$ ${current.toFixed(2)}`}
+                </span>
+                <button onClick={() => removeTarget(t.id)} className="text-stone-300 hover:text-red-500 transition-colors">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            )
+          })}
+          {targets.length === 0 && (
+            <p className="text-xs text-stone-400 text-center py-3">Nenhum alvo definido ainda.</p>
+          )}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Custo por talhão */}
