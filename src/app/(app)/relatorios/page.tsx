@@ -1,13 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { FileText, Sparkles, Loader2, Download, TrendingUp, Droplets, FlaskConical, Sprout } from 'lucide-react'
-import { INITIAL_CROPS } from '@/lib/crops-store'
-import { FIELDS } from '@/lib/fields-data'
-import { FARM } from '@/lib/mock-data'
+import { fieldsFromProfile } from '@/lib/fields-data'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
 import { exportReportPDF } from '@/lib/export-pdf'
 
 const SPRAY_LOG = [
@@ -26,6 +25,16 @@ const RAIN_MONTHS = [
 const maxRain = Math.max(...RAIN_MONTHS.map(r => r.mm))
 
 export default function RelatoriosPage() {
+  const profile = useMemo(() => getDemoProfileClient(), [])
+  const FIELDS = useMemo(() => fieldsFromProfile(profile), [profile])
+  const FARM = profile.farm
+  // Culturas do perfil no formato esperado pelo relatório
+  const reportCrops = useMemo(() => profile.crops.map(c => ({
+    ...c,
+    fieldName: c.field,
+    variety: '',
+    expectedYield: c.name.toLowerCase().includes('milho') ? 105 : 60,
+  })), [profile])
   const [aiReport, setAiReport] = useState('')
   const [loading, setLoading] = useState(false)
   const [season, setSeason] = useState('25/26')
@@ -33,7 +42,7 @@ export default function RelatoriosPage() {
   const totalHa = FIELDS.reduce((a, f) => a + f.hectares, 0)
   const totalApplications = SPRAY_LOG.length
   const totalRain = RAIN_MONTHS.reduce((a, r) => a + r.mm, 0)
-  const avgNdvi = (FIELDS.reduce((a, f) => a + f.ndvi, 0) / FIELDS.length).toFixed(2)
+  const avgNdvi = FIELDS.length ? (FIELDS.reduce((a, f) => a + f.ndvi, 0) / FIELDS.length).toFixed(2) : '—'
 
   async function generateReport() {
     setLoading(true)
@@ -44,7 +53,7 @@ export default function RelatoriosPage() {
         city: `${FARM.city} — ${FARM.state}`,
         season,
         totalHa,
-        crops: INITIAL_CROPS.map(c => `${c.name} (${c.hectares}ha, ${c.phase}, ${c.expectedYield}sc/ha esperado)`).join('; '),
+        crops: reportCrops.map(c => `${c.name} (${c.hectares}ha, ${c.phase}, ${c.expectedYield}sc/ha esperado)`).join('; '),
         fields: FIELDS.length,
         avgNdvi,
         totalRain,
@@ -76,7 +85,7 @@ Estruture o relatório com:
 
 Seja técnico mas acessível. Use dados fornecidos.`,
           }],
-          context: { city: `${FARM.city} — ${FARM.state}`, crops: INITIAL_CROPS.map(c => c.name) },
+          context: { city: `${FARM.city} — ${FARM.state}`, crops: reportCrops.map(c => c.name) },
         }),
       })
       const data = await res.json()
@@ -125,7 +134,7 @@ Seja técnico mas acessível. Use dados fornecidos.`,
         <Card className="p-5">
           <h3 className="text-sm font-medium text-stone-700 mb-4">Resumo por cultura</h3>
           <div className="space-y-4">
-            {INITIAL_CROPS.map(c => {
+            {reportCrops.map(c => {
               const harvest = new Date(c.harvestAt + 'T12:00')
               const planted = new Date(c.plantedAt + 'T12:00')
               const totalDays = Math.max(1, (harvest.getTime() - planted.getTime()) / 86400000)
@@ -234,7 +243,7 @@ Seja técnico mas acessível. Use dados fornecidos.`,
                 farmName: FARM.name,
                 season,
                 totalHa,
-                crops: INITIAL_CROPS.map(c => ({ name: c.name, hectares: c.hectares, expectedYield: c.expectedYield, phase: c.phase })),
+                crops: reportCrops.map(c => ({ name: c.name, hectares: c.hectares, expectedYield: c.expectedYield, phase: c.phase })),
                 totalRain,
                 avgNdvi,
                 applications: totalApplications,

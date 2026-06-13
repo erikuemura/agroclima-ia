@@ -1,14 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Plus, X, Edit2, Sprout, TrendingUp, CalendarDays, FileText } from 'lucide-react'
 import {
-  CropEntry, CropStatus, PHASE_OPTIONS, CROP_OPTIONS, INITIAL_CROPS,
+  CropEntry, CropStatus, PHASE_OPTIONS, CROP_OPTIONS,
 } from '@/lib/crops-store'
-import { FIELDS } from '@/lib/fields-data'
+import { fieldsFromProfile } from '@/lib/fields-data'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
+
+// Converte as culturas do perfil ativo no formato do CRUD
+function cropsFromProfile(): CropEntry[] {
+  const p = getDemoProfileClient()
+  return p.crops.map(c => ({
+    id: c.id,
+    name: c.name,
+    variety: '',
+    emoji: c.emoji,
+    fieldId: c.id,
+    fieldName: c.field,
+    hectares: c.hectares,
+    plantedAt: c.plantedAt,
+    harvestAt: c.harvestAt,
+    phase: c.phase,
+    phasePercent: c.phasePercent,
+    status: c.status,
+    expectedYield: c.name.toLowerCase().includes('milho') ? 105 : 60,
+    notes: '',
+    season: '25/26',
+  }))
+}
 
 const statusColor: Record<CropStatus, string> = {
   normal:    'bg-green-100 text-green-800',
@@ -37,7 +60,8 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 const inputCls = 'border border-stone-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500 bg-white'
 
 export default function CulturasPage() {
-  const [crops, setCrops] = useState<CropEntry[]>(INITIAL_CROPS)
+  const FIELDS = useMemo(() => fieldsFromProfile(getDemoProfileClient()), [])
+  const [crops, setCrops] = useState<CropEntry[]>(cropsFromProfile)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<Omit<CropEntry, 'id'>>(BLANK)

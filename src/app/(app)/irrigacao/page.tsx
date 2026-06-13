@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Droplets, TrendingDown, TrendingUp, Plus, Loader2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
-import { FIELDS } from '@/lib/fields-data'
-import { FARM } from '@/lib/mock-data'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
+import { kcFor } from '@/lib/intelligence/water-balance'
+import type { Crop } from '@/types'
 
 interface DayBalance {
   date: string
@@ -26,47 +27,35 @@ interface IrrigationRecord {
 
 const METHODS = ['Pivô central', 'Gotejamento', 'Aspersão', 'Sulcos', 'Inundação']
 
-const MOCK_BALANCE: DayBalance[] = [
-  { date: '04/jun', label: '04/jun', rain: 0, eto: 5.8, balance: -5.8 },
-  { date: '05/jun', label: '05/jun', rain: 0, eto: 6.1, balance: -6.1 },
-  { date: '06/jun', label: '06/jun', rain: 2.1, eto: 5.5, balance: -3.4 },
-  { date: '07/jun', label: '07/jun', rain: 0, eto: 6.3, balance: -6.3 },
-  { date: '08/jun', label: '08/jun', rain: 0, eto: 5.9, balance: -5.9 },
-  { date: '09/jun', label: '09/jun', rain: 0, eto: 4.2, balance: -4.2 },
-  { date: '10/jun', label: 'Hoje', rain: 1.3, eto: 3.8, balance: -2.5 },
-]
-
-const INITIAL_RECORDS: IrrigationRecord[] = [
-  { id: '1', date: '2026-06-02', field: 'Talhão 2', lamina: 18, method: 'Pivô central' },
-  { id: '2', date: '2026-05-20', field: 'Talhão 1', lamina: 22, method: 'Pivô central' },
-]
-
 type FieldBalance = {
   id: string
   name: string
   cropName: string | null
   cropEmoji: string | null
-  eto7d: number
+  etc7d: number          // demanda da cultura (ETo × Kc)
   rain7d: number
   deficit: number
   recommendation: number
+  kc: number
   urgency: 'ok' | 'moderate' | 'critical'
 }
 
-function buildFieldBalances(eto7d: number, rain7d: number): FieldBalance[] {
-  return FIELDS.map((f, i) => {
-    const fieldEto = eto7d * (0.9 + i * 0.08)
-    const deficit = Math.max(0, fieldEto - rain7d)
-    const rec = Math.ceil(deficit * 0.85)
+// Balanço por cultura usando Kc da fase fenológica (FAO-56)
+function buildFieldBalances(crops: Crop[], eto7d: number, rain7d: number): FieldBalance[] {
+  return crops.map(c => {
+    const kc = kcFor(c.name, c.phase)
+    const etc = eto7d * kc
+    const deficit = Math.max(0, etc - rain7d)
     return {
-      id: f.id,
-      name: f.name,
-      cropName: f.cropName,
-      cropEmoji: f.cropEmoji,
-      eto7d: Math.round(fieldEto * 10) / 10,
+      id: c.id,
+      name: c.field,
+      cropName: c.name,
+      cropEmoji: c.emoji,
+      etc7d: Math.round(etc * 10) / 10,
       rain7d,
       deficit: Math.round(deficit * 10) / 10,
-      recommendation: rec,
+      recommendation: Math.ceil(deficit * 0.85),
+      kc,
       urgency: deficit > 25 ? 'critical' : deficit > 12 ? 'moderate' : 'ok',
     }
   })
@@ -80,30 +69,42 @@ const urgencyStyle = {
 const urgencyLabel = { ok: 'Adequado', moderate: 'Moderado', critical: 'Crítico' }
 
 export default function IrrigacaoPage() {
+  const profile = useMemo(() => getDemoProfileClient(), [])
+  const crops = profile.crops
   const [eto7d, setEto7d] = useState(28.1)
   const [rain7d, setRain7d] = useState(1.3)
+  const [daily, setDaily] = useState<DayBalance[]>([])
   const [loading, setLoading] = useState(true)
-  const [records, setRecords] = useState<IrrigationRecord[]>(INITIAL_RECORDS)
+  const [records, setRecords] = useState<IrrigationRecord[]>([])
   const [showAdd, setShowAdd] = useState(false)
-  const [newRec, setNewRec] = useState({ field: FIELDS[0].name, lamina: 20, method: 'Pivô central' })
-  const [selectedField, setSelectedField] = useState<string>(FIELDS[0].id)
+  const [newRec, setNewRec] = useState({ field: crops[0]?.field ?? 'Talhão 1', lamina: 20, method: 'Pivô central' })
+  const [selectedField, setSelectedField] = useState<string>(crops[0]?.id ?? '')
 
   useEffect(() => {
-    fetch(`/api/weather?lat=${FARM.lat}&lon=${FARM.lon}`)
+    fetch(`/api/weather?lat=${profile.farm.lat}&lon=${profile.farm.lon}`)
       .then(r => r.json())
       .then(d => {
-        setEto7d(d.current.eto7d ?? 28.1)
-        setRain7d(d.current.rain7d ?? 1.3)
+        const e7 = d.current?.eto7d ?? 28.1
+        const r7 = d.current?.rain7d ?? 1.3
+        setEto7d(e7)
+        setRain7d(r7)
+        // Balanço diário real a partir da previsão: chuva por dia vs ETo diária (≈ eto7d/7)
+        const etoDay = e7 / 7
+        const days: DayBalance[] = (d.days ?? []).slice(0, 7).map((day: { label: string; date: string; rain: number }) => ({
+          date: day.date,
+          label: day.label,
+          rain: day.rain,
+          eto: +etoDay.toFixed(1),
+          balance: +(day.rain - etoDay).toFixed(1),
+        }))
+        setDaily(days)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [profile.farm.lat, profile.farm.lon])
 
-  const balances = buildFieldBalances(eto7d, rain7d)
+  const balances = buildFieldBalances(crops, eto7d, rain7d)
   const sel = balances.find(b => b.id === selectedField) ?? balances[0]
-  const accumulated7d = MOCK_BALANCE.reduce((a, d) => a + d.rain, 0)
-  const eto7dAccum = MOCK_BALANCE.reduce((a, d) => a + d.eto, 0)
-  const deficit7d = Math.max(0, eto7dAccum - accumulated7d)
 
   function addRecord() {
     setRecords(r => [{
@@ -114,7 +115,7 @@ export default function IrrigacaoPage() {
     setShowAdd(false)
   }
 
-  const maxBar = Math.max(...MOCK_BALANCE.map(d => Math.abs(d.balance)), 1)
+  const maxBar = Math.max(...daily.map(d => Math.abs(d.balance)), 1)
 
   return (
     <div className="space-y-5 max-w-5xl">
@@ -142,9 +143,9 @@ export default function IrrigacaoPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Balanço diário */}
         <Card className="col-span-2 p-5">
-          <h3 className="text-sm font-medium text-stone-700 mb-4">Balanço hídrico diário — 7 dias</h3>
+          <h3 className="text-sm font-medium text-stone-700 mb-4">Balanço hídrico — previsão 7 dias</h3>
           <div className="flex items-end gap-2 h-32 mb-2">
-            {MOCK_BALANCE.map(d => {
+            {daily.map(d => {
               const isNeg = d.balance < 0
               const pct = Math.abs(d.balance) / maxBar * 100
               return (
@@ -166,7 +167,7 @@ export default function IrrigacaoPage() {
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" /> Déficit</span>
           </div>
           <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-stone-100">
-            {MOCK_BALANCE.map(d => (
+            {daily.map(d => (
               <div key={d.date} className="flex justify-between text-xs">
                 <span className="text-stone-400">{d.label}</span>
                 <span className={cn('font-medium', d.balance < 0 ? 'text-red-500' : 'text-blue-500')}>
@@ -233,7 +234,7 @@ export default function IrrigacaoPage() {
                 <label className="text-xs text-stone-500 block mb-1">Talhão</label>
                 <select value={newRec.field} onChange={e => setNewRec(r => ({ ...r, field: e.target.value }))}
                   className="w-full border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-green-500">
-                  {FIELDS.map(f => <option key={f.id}>{f.name}</option>)}
+                  {crops.map(c => <option key={c.id}>{c.field}</option>)}
                 </select>
               </div>
               <div>

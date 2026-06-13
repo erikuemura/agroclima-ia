@@ -28,8 +28,10 @@ export function FieldMap({ fields, selectedId, onSelect }: Props) {
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       })
 
+      // Centro inicial = primeiro vértice do primeiro talhão (fallback Cerrado)
+      const initialCenter = (fields[0]?.coordinates?.[0] as [number, number]) ?? [-12.544, -55.700]
       const map = L.map(mapRef.current!, {
-        center: [-12.544, -55.700],
+        center: initialCenter,
         zoom: 13,
         zoomControl: true,
       })
@@ -39,6 +41,7 @@ export function FieldMap({ fields, selectedId, onSelect }: Props) {
         maxZoom: 19,
       }).addTo(map)
 
+      const allPolys: any[] = []
       fields.forEach((field) => {
         const color = NDVI_COLOR[field.ndviStatus]
         const poly = L.polygon(field.coordinates as [number, number][], {
@@ -61,7 +64,14 @@ export function FieldMap({ fields, selectedId, onSelect }: Props) {
         poly.on('mouseout', () => poly.setStyle({ fillOpacity: 0.55, weight: 2 }))
 
         layersRef.current[field.id] = poly
+        allPolys.push(poly)
       })
+
+      // Enquadra todos os talhões da fazenda real
+      if (allPolys.length > 0) {
+        const group = L.featureGroup(allPolys)
+        map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 15 })
+      }
 
       mapInstanceRef.current = map
       setReady(true)

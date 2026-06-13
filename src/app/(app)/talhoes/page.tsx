@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { FieldPanel } from '@/components/fields/FieldPanel'
-import { FIELDS, NDVI_COLOR, NDVI_LABEL } from '@/lib/fields-data'
+import { fieldsFromProfile, NDVI_COLOR, NDVI_LABEL } from '@/lib/fields-data'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +22,7 @@ const statusBg: Record<string, string> = {
 }
 
 export default function TalhoesPage() {
+  const FIELDS = useMemo(() => fieldsFromProfile(getDemoProfileClient()), [])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selectedField = FIELDS.find(f => f.id === selectedId) ?? null
   const totalHa = FIELDS.reduce((a, f) => a + f.hectares, 0)

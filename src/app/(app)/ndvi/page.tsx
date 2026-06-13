@@ -1,65 +1,51 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, Satellite } from 'lucide-react'
-import { FIELDS, NDVI_COLOR, NDVI_LABEL } from '@/lib/fields-data'
+import { fieldsFromProfile, NDVI_COLOR, NDVI_LABEL, type Field } from '@/lib/fields-data'
 import { NdviZonesCard } from '@/components/dashboard/NdviZonesCard'
 import { getDemoProfileClient } from '@/lib/demo-profiles'
 
-// Série temporal NDVI simulada (12 meses)
-const NDVI_HISTORY: Record<string, { month: string; ndvi: number; prev: number }[]> = {
-  t1: [
-    { month: 'Jul/25', ndvi: 0.18, prev: 0.19 },
-    { month: 'Ago/25', ndvi: 0.22, prev: 0.20 },
-    { month: 'Set/25', ndvi: 0.31, prev: 0.28 },
-    { month: 'Out/25', ndvi: 0.48, prev: 0.45 },
-    { month: 'Nov/25', ndvi: 0.62, prev: 0.60 },
-    { month: 'Dez/25', ndvi: 0.71, prev: 0.68 },
-    { month: 'Jan/26', ndvi: 0.79, prev: 0.76 },
-    { month: 'Fev/26', ndvi: 0.76, prev: 0.78 },
-    { month: 'Mar/26', ndvi: 0.69, prev: 0.72 },
-    { month: 'Abr/26', ndvi: 0.55, prev: 0.58 },
-    { month: 'Mai/26', ndvi: 0.42, prev: 0.44 },
-    { month: 'Jun/26', ndvi: 0.74, prev: 0.70 },
-  ],
-  t2: [
-    { month: 'Jul/25', ndvi: 0.15, prev: 0.16 },
-    { month: 'Ago/25', ndvi: 0.17, prev: 0.18 },
-    { month: 'Set/25', ndvi: 0.20, prev: 0.21 },
-    { month: 'Out/25', ndvi: 0.24, prev: 0.25 },
-    { month: 'Nov/25', ndvi: 0.28, prev: 0.30 },
-    { month: 'Dez/25', ndvi: 0.31, prev: 0.33 },
-    { month: 'Jan/26', ndvi: 0.33, prev: 0.36 },
-    { month: 'Fev/26', ndvi: 0.30, prev: 0.34 },
-    { month: 'Mar/26', ndvi: 0.28, prev: 0.31 },
-    { month: 'Abr/26', ndvi: 0.26, prev: 0.29 },
-    { month: 'Mai/26', ndvi: 0.24, prev: 0.27 },
-    { month: 'Jun/26', ndvi: 0.32, prev: 0.29 },
-  ],
-  t3: [
-    { month: 'Jul/25', ndvi: 0.10, prev: 0.14 },
-    { month: 'Ago/25', ndvi: 0.10, prev: 0.13 },
-    { month: 'Set/25', ndvi: 0.11, prev: 0.14 },
-    { month: 'Out/25', ndvi: 0.10, prev: 0.15 },
-    { month: 'Nov/25', ndvi: 0.09, prev: 0.14 },
-    { month: 'Dez/25', ndvi: 0.11, prev: 0.13 },
-    { month: 'Jan/26', ndvi: 0.10, prev: 0.13 },
-    { month: 'Fev/26', ndvi: 0.11, prev: 0.12 },
-    { month: 'Mar/26', ndvi: 0.10, prev: 0.13 },
-    { month: 'Abr/26', ndvi: 0.10, prev: 0.12 },
-    { month: 'Mai/26', ndvi: 0.11, prev: 0.12 },
-    { month: 'Jun/26', ndvi: 0.12, prev: 0.13 },
-  ],
+// Histórico NDVI de 12 meses gerado por talhão: curva sazonal que termina
+// no NDVI atual do talhão; "safra anterior" = mesma curva com leve variação.
+function buildHistory(field: Field): { month: string; ndvi: number; prev: number }[] {
+  const now = new Date()
+  const MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+  const out: { month: string; ndvi: number; prev: number }[] = []
+  for (let k = 11; k >= 0; k--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - k, 1)
+    const monthsAgo = k
+    // curva: cresce até ~3 meses atrás e converge ao NDVI atual no mês 0
+    const seasonal = Math.sin(((11 - monthsAgo) / 11) * Math.PI) // 0→1→0
+    const target = field.ndvi
+    const ndvi = +Math.max(0.08, Math.min(0.92, target * (0.45 + 0.55 * seasonal) + (monthsAgo === 0 ? 0 : 0))).toFixed(2)
+    const finalNdvi = monthsAgo === 0 ? target : ndvi
+    const jitter = (Math.sin(monthsAgo * 7.3 + field.hectares) * 0.05)
+    out.push({
+      month: `${MES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`,
+      ndvi: finalNdvi,
+      prev: +Math.max(0.08, Math.min(0.92, finalNdvi - 0.03 + jitter)).toFixed(2),
+    })
+  }
+  return out
 }
 
-const ANOMALIES = [
-  { fieldId: 't1', zone: 'Setor NE', area: '12 ha', description: 'NDVI abaixo de 0.5 — possível compactação ou deficiência hídrica localizada', severity: 'moderate' as const },
-  { fieldId: 't2', zone: 'Toda a área', area: '180 ha', description: 'NDVI consistentemente baixo desde o plantio — verificar stand e fertilidade', severity: 'high' as const },
-  { fieldId: 't3', zone: 'Toda a área', area: '95 ha', description: 'Sem cobertura vegetal ativa — talhão sem cultura plantada', severity: 'info' as const },
-]
+interface Anomaly { fieldId: string; zone: string; area: string; description: string; severity: 'high' | 'moderate' | 'info' }
+
+function buildAnomalies(fields: Field[]): Anomaly[] {
+  const out: Anomaly[] = []
+  for (const f of fields) {
+    if (f.ndviStatus === 'critico') {
+      out.push({ fieldId: f.id, zone: 'Toda a área', area: `${f.hectares} ha`, description: `NDVI ${f.ndvi.toFixed(2)} — cobertura vegetal muito baixa. Verifique stand, plantio ou se o talhão está em pousio.`, severity: 'high' })
+    } else if (f.ndviStatus === 'baixo') {
+      out.push({ fieldId: f.id, zone: 'Setor com estresse', area: `~${Math.round(f.hectares * 0.2)} ha`, description: `NDVI ${f.ndvi.toFixed(2)} — possível déficit hídrico, compactação ou deficiência nutricional localizada. Recomenda-se vistoria.`, severity: 'moderate' })
+    }
+  }
+  return out
+}
 
 const anomalySeverityStyle = {
   high:     'bg-red-50 border-red-200',
@@ -69,12 +55,22 @@ const anomalySeverityStyle = {
 
 export default function NdviPage() {
   const profile = getDemoProfileClient()
-  const [selectedField, setSelectedField] = useState('t1')
-  const field = FIELDS.find(f => f.id === selectedField)!
-  const history = NDVI_HISTORY[selectedField]
-  const fieldAnomalies = ANOMALIES.filter(a => a.fieldId === selectedField)
-  const maxNdvi = 1.0
+  const FIELDS = useMemo(() => fieldsFromProfile(profile), [profile])
+  const anomalies = useMemo(() => buildAnomalies(FIELDS), [FIELDS])
+  const [selectedField, setSelectedField] = useState(FIELDS[0]?.id ?? '')
+  const field = FIELDS.find(f => f.id === selectedField) ?? FIELDS[0]
+  const history = useMemo(() => field ? buildHistory(field) : [], [field])
+  const fieldAnomalies = anomalies.filter(a => a.fieldId === selectedField)
   const chartH = 120
+
+  if (!field) {
+    return (
+      <div className="max-w-5xl">
+        <h1 className="text-lg font-semibold text-stone-800">NDVI & satélite</h1>
+        <p className="text-sm text-stone-400 mt-2">Cadastre uma cultura para ver o monitoramento por satélite dos seus talhões.</p>
+      </div>
+    )
+  }
 
   const last = history[history.length - 1]
   const prev = history[history.length - 2]
@@ -212,7 +208,7 @@ export default function NdviPage() {
                 {Array.from({ length: 80 }).map((_, i) => {
                   const row = Math.floor(i / 10)
                   const col = i % 10
-                  const isAnomaly = selectedField === 't1' && row < 3 && col > 7
+                  const isAnomaly = (field.ndviStatus === 'baixo' || field.ndviStatus === 'critico') && row < 3 && col > 7
                   const base = field.ndvi
                   const noise = (Math.sin(i * 13.7) * 0.12)
                   const val = isAnomaly ? 0.3 : Math.max(0.05, Math.min(0.95, base + noise))

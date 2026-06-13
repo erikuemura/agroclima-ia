@@ -4,17 +4,36 @@ import { useState, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, Circle, Bot } from 'lucide-react'
-import { AgriEvent, EventType, EVENT_COLOR, EVENT_ICON, INITIAL_EVENTS } from '@/lib/calendar-data'
-import { CROPS } from '@/lib/mock-data'
+import { AgriEvent, EventType, EVENT_COLOR, EVENT_ICON } from '@/lib/calendar-data'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
 
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 
+// Eventos-base derivados das culturas do perfil: plantio, monitoramento no
+// meio do ciclo e colheita prevista para cada cultura cadastrada.
+function seedEventsFromProfile(): AgriEvent[] {
+  const p = getDemoProfileClient()
+  const out: AgriEvent[] = []
+  for (const c of p.crops) {
+    if (c.plantedAt) out.push({ id: `seed-plant-${c.id}`, date: c.plantedAt, title: `Plantio — ${c.field}`, type: 'plantio', crop: c.name, field: c.field, done: true, aiGenerated: false })
+    if (c.plantedAt && c.harvestAt) {
+      const start = new Date(c.plantedAt).getTime()
+      const end = new Date(c.harvestAt).getTime()
+      const mid = new Date(start + (end - start) / 2).toISOString().slice(0, 10)
+      out.push({ id: `seed-mon-${c.id}`, date: mid, title: `Monitoramento de pragas — ${c.field}`, type: 'monitoramento', crop: c.name, field: c.field, done: false, aiGenerated: false })
+    }
+    if (c.harvestAt) out.push({ id: `seed-harv-${c.id}`, date: c.harvestAt, title: `Colheita prevista — ${c.field}`, type: 'colheita', crop: c.name, field: c.field, done: false, aiGenerated: false })
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date))
+}
+
 export default function CalendarioPage() {
   const today = new Date()
+  const profile = useMemo(() => getDemoProfileClient(), [])
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
-  const [events, setEvents] = useState<AgriEvent[]>(INITIAL_EVENTS)
+  const [events, setEvents] = useState<AgriEvent[]>(seedEventsFromProfile)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [view, setView] = useState<'month' | 'list'>('month')
@@ -34,16 +53,23 @@ export default function CalendarioPage() {
   function toggleDone(id: string) { setEvents(evs => evs.map(e => e.id === id ? { ...e, done: !e.done } : e)) }
 
   async function generateSchedule() {
-    const crop = CROPS[0]
+    if (profile.crops.length === 0) return
     setGenerating(true)
     try {
-      const res = await fetch('/api/ai-calendar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ crop: crop.name, field: crop.field, plantedAt: crop.plantedAt, harvestAt: crop.harvestAt, currentDate: today.toISOString().split('T')[0] }),
+      // Gera cronograma IA para cada cultura do perfil em paralelo
+      const results = await Promise.all(profile.crops.map(crop =>
+        fetch('/api/ai-calendar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ crop: crop.name, field: crop.field, plantedAt: crop.plantedAt, harvestAt: crop.harvestAt, currentDate: today.toISOString().split('T')[0] }),
+        }).then(r => r.json()).catch(() => [] as AgriEvent[])
+      ))
+      const newEvents = results.flat() as AgriEvent[]
+      setEvents(ev => {
+        const ids = new Set(ev.map(e => e.id))
+        const fresh = newEvents.filter(e => e && e.date && !ids.has(e.id))
+        return [...ev, ...fresh]
       })
-      const newEvents: AgriEvent[] = await res.json()
-      setEvents(ev => { const ids = new Set(ev.map(e => e.id)); return [...ev, ...newEvents.filter(e => !ids.has(e.id))] })
     } finally { setGenerating(false) }
   }
 

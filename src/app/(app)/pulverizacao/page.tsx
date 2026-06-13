@@ -1,11 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { Wind, Droplets, Thermometer, Sparkles, Loader2, CheckCircle2, XCircle, AlertTriangle, Plus } from 'lucide-react'
-import { CROPS } from '@/lib/mock-data'
+import { Wind, Droplets, Thermometer, Sparkles, Loader2, CheckCircle2, XCircle, AlertTriangle, Plus, ClipboardCheck } from 'lucide-react'
+import { getDemoProfileClient } from '@/lib/demo-profiles'
+import { readDiary, writeDiary, readStock, writeStockItems, readStockMovements, writeStockMovements, type DiaryEvent } from '@/lib/stores'
+
+// Tenta dar baixa no estoque casando o nome do produto e estimando a quantidade
+// total (primeiro número da dose × área; ml→L e g→kg). Retorna true se baixou.
+function applyStockDeduction(product: string, dose: string, areaHa: number, notes: string, date: string): { item: string; qty: number; unit: string } | null {
+  const items = readStock()
+  const match = items.find(i => product.toLowerCase().includes(i.name.toLowerCase().split(' ')[0]) || i.name.toLowerCase().includes(product.toLowerCase().split(' ')[0]))
+  if (!match) return null
+  const m = dose.match(/([\d.,]+)\s*(ml|l|g|kg)?/i)
+  if (!m) return null
+  let perHa = parseFloat(m[1].replace(',', '.'))
+  const unit = (m[2] ?? '').toLowerCase()
+  if (unit === 'ml') perHa /= 1000  // ml → L
+  if (unit === 'g') perHa /= 1000   // g → kg
+  const total = +(perHa * areaHa).toFixed(2)
+  if (!total || total <= 0) return null
+
+  const updated = items.map(i => i.id === match.id ? { ...i, quantity: Math.max(0, +(i.quantity - total).toFixed(2)) } : i)
+  writeStockItems(updated)
+  writeStockMovements([
+    { id: `m${Date.now()}`, itemId: match.id, kind: 'aplicação', quantity: total, date, notes },
+    ...readStockMovements(),
+  ])
+  return { item: match.name, qty: total, unit: match.unit }
+}
 
 interface SprayRec {
   windowStatus: 'aberta' | 'restrita' | 'fechada'
@@ -51,18 +76,37 @@ const windowLabel: Record<string, string> = {
 }
 
 export default function PulverizacaoPage() {
+  const profile = useMemo(() => getDemoProfileClient(), [])
+  const CROPS = profile.crops
   const [windSpeed, setWindSpeed] = useState(12)
   const [humidity, setHumidity] = useState(65)
   const [temp, setTemp] = useState(28)
+  const [climateLoaded, setClimateLoaded] = useState(false)
   const [cropId, setCropId] = useState('0')
   const [problem, setProblem] = useState('Ferrugem asiática')
   const [rec, setRec] = useState<SprayRec | null>(null)
   const [loading, setLoading] = useState(false)
   const [records, setRecords] = useState<SprayRecord[]>(INITIAL_RECORDS)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [newRecord, setNewRecord] = useState({ product: '', dose: '', area: '420', problem: '' })
+  const [newRecord, setNewRecord] = useState({ product: '', dose: '', area: String(profile.crops[0]?.hectares ?? 100), problem: '' })
+  const [savedMsg, setSavedMsg] = useState('')
 
-  const crop = CROPS[parseInt(cropId)]
+  const crop = CROPS[parseInt(cropId)] ?? CROPS[0]
+
+  // Pré-preenche as condições com o clima REAL da fazenda
+  useEffect(() => {
+    fetch(`/api/weather?lat=${profile.farm.lat}&lon=${profile.farm.lon}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.current) {
+          setWindSpeed(Math.round(d.current.windSpeed ?? 12))
+          setHumidity(Math.round(d.current.humidity ?? 65))
+          setTemp(Math.round(d.current.temp ?? 28))
+          setClimateLoaded(true)
+        }
+      })
+      .catch(() => {})
+  }, [profile.farm.lat, profile.farm.lon])
 
   // local window calculation (no API needed)
   const localWindow: SprayRec['windowStatus'] =
@@ -86,18 +130,44 @@ export default function PulverizacaoPage() {
 
   function addRecord() {
     if (!newRecord.product) return
+    const date = new Date().toISOString().split('T')[0]
+    const area = parseInt(newRecord.area) || crop.hectares
+    const alvo = newRecord.problem || problem
     const record: SprayRecord = {
       id: String(Date.now()),
-      date: new Date().toISOString().split('T')[0],
+      date,
       crop: crop.name,
       field: crop.field,
       product: newRecord.product,
       dose: newRecord.dose,
-      area: parseInt(newRecord.area) || crop.hectares,
-      problem: newRecord.problem || problem,
+      area,
+      problem: alvo,
     }
     setRecords(r => [record, ...r])
-    setNewRecord({ product: '', dose: '', area: '420', problem: '' })
+
+    // Integração: grava no Diário de campo
+    const notes = `${newRecord.product}${newRecord.dose ? ` · ${newRecord.dose}` : ''} · alvo: ${alvo}`
+    const event: DiaryEvent = {
+      id: `pulv-${Date.now()}`,
+      type: 'pulverização',
+      date,
+      field: crop.field,
+      operator: '—',
+      machine: '—',
+      notes,
+    }
+    writeDiary([event, ...readDiary()])
+
+    // Integração: baixa no Estoque (se o produto casar com um item)
+    const deduction = applyStockDeduction(newRecord.product, newRecord.dose, area, `${crop.field} · ${alvo}`, date)
+
+    setSavedMsg(
+      deduction
+        ? `Registrado no diário · baixa de ${deduction.qty}${deduction.unit} de ${deduction.item} no estoque`
+        : 'Registrado no diário de campo'
+    )
+    setTimeout(() => setSavedMsg(''), 5000)
+    setNewRecord({ product: '', dose: '', area: String(crop.hectares), problem: '' })
     setShowAddForm(false)
   }
 
@@ -114,7 +184,12 @@ export default function PulverizacaoPage() {
         {/* Painel de condições */}
         <div className="lg:col-span-2 space-y-4">
           <Card className="p-5">
-            <h3 className="text-sm font-medium text-stone-700 mb-4">Condições atuais</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-stone-700">Condições atuais</h3>
+              {climateLoaded && (
+                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🛰️ clima real da fazenda</span>
+              )}
+            </div>
             <div className="space-y-4">
               {/* Vento */}
               <div>
@@ -250,6 +325,12 @@ export default function PulverizacaoPage() {
                 <button onClick={addRecord} className="w-full bg-green-700 text-white rounded-lg py-1.5 text-xs hover:bg-green-800 transition-colors">
                   Salvar registro
                 </button>
+              </div>
+            )}
+
+            {savedMsg && (
+              <div className="mb-3 flex items-center gap-1.5 text-[11px] text-green-700 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+                <ClipboardCheck className="w-3.5 h-3.5 flex-shrink-0" /> {savedMsg}
               </div>
             )}
 
