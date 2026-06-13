@@ -53,10 +53,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "CampoClima",
   },
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/icons/icon-192x192.png",
-  },
+  // Ícones detectados automaticamente do App Router:
+  // src/app/icon.svg, src/app/icon.png e src/app/apple-icon.png
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
