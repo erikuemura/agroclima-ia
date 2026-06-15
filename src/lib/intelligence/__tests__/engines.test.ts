@@ -5,6 +5,7 @@ import { computeHealthScore } from '../health-score'
 import { stormInsights, sortInsights } from '../insights'
 import { lossFromWaterDeficit, formatBRL, matchCommodity, revenueEstimate } from '@/lib/finance'
 import { estimateAiCostBRL } from '@/lib/server-events'
+import { limingNeed, plantingRate, harvestValue } from '@/lib/agro-calc'
 import type { WeatherCurrent, WeatherDay, Crop } from '@/types'
 
 const sojaFloracao: Crop = {
@@ -140,5 +141,43 @@ describe('motor financeiro', () => {
     expect(formatBRL(41_000)).toBe('R$ 41 mil')
     expect(formatBRL(4_100_000)).toContain('mi')
     expect(formatBRL(850)).toBe('R$ 850')
+  })
+})
+
+describe('cálculos agronômicos (ferramentas públicas)', () => {
+  it('calagem: NC = ((V2-V1)×CTC)/PRNT', () => {
+    const r = limingNeed(40, 60, 8, 90, 100)
+    expect(r.tonsPerHa).toBeCloseTo(1.78, 1)
+    expect(r.totalTons).toBeCloseTo(178, 0)
+    expect(r.status).toBe('recomendado')
+  })
+
+  it('calagem: V atual >= alvo → desnecessário', () => {
+    const r = limingNeed(65, 60, 8, 90, 100)
+    expect(r.status).toBe('desnecessario')
+    expect(r.tonsPerHa).toBe(0)
+  })
+
+  it('população: desconta germinação×emergência e calcula por metro', () => {
+    const r = plantingRate(300_000, 50, 90, 95, 100, 180, 60_000)
+    // efetivo = 0.9*0.95 = 0.855 → sementes/ha = 300000/0.855 ≈ 350877
+    expect(r.seedsPerHa).toBeGreaterThan(340_000)
+    expect(r.seedsPerHa).toBeLessThan(360_000)
+    expect(r.seedsPerMeter).toBeGreaterThan(0)
+    expect(r.kgPerHa).toBeGreaterThan(0)        // PMS informado
+    expect(r.bagsNeeded).toBeGreaterThan(0)     // sacos informados
+  })
+
+  it('população: sem PMS/saco → campos opcionais null', () => {
+    const r = plantingRate(300_000, 50, 90, 95, 10)
+    expect(r.kgPerHa).toBeNull()
+    expect(r.bagsNeeded).toBeNull()
+  })
+
+  it('valor da safra: área × produtividade × preço', () => {
+    const r = harvestValue(100, 60, 120)
+    expect(r.totalBags).toBe(6000)
+    expect(r.grossValue).toBe(720_000)
+    expect(r.perHa).toBe(7200)
   })
 })

@@ -27,6 +27,7 @@ export default function LandingPage() {
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
           <Link href="#recursos" className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Recursos</Link>
+          <Link href="/ferramentas" className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Ferramentas</Link>
           <Link href="/demo" className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Demo</Link>
           <Link href="/precos" className="text-sm text-stone-500 hover:text-stone-800 transition-colors">Preços</Link>
           <Link href="/login" className="text-sm text-stone-600 border border-stone-200 rounded-lg px-4 py-2 hover:bg-stone-50 transition-colors">Entrar</Link>
