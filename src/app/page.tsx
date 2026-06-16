@@ -10,6 +10,54 @@ export const metadata: Metadata = {
   openGraph: { url: '/' },
 }
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://campoclima.com.br/#org',
+      name: 'CampoClima',
+      url: 'https://campoclima.com.br',
+      logo: 'https://campoclima.com.br/icon.png',
+      description: 'Plataforma de gestão agrícola com IA para produtores rurais brasileiros.',
+      contactPoint: { '@type': 'ContactPoint', email: 'contato@campoclima.com.br', contactType: 'customer support', availableLanguage: 'Portuguese' },
+      sameAs: [],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': 'https://campoclima.com.br/#app',
+      name: 'CampoClima',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web, Android, iOS',
+      url: 'https://campoclima.com.br',
+      offers: [
+        { '@type': 'Offer', price: '0', priceCurrency: 'BRL', name: 'Gratuito' },
+        { '@type': 'Offer', price: '49', priceCurrency: 'BRL', name: 'Produtor', billingIncrement: 'P1M' },
+        { '@type': 'Offer', price: '129', priceCurrency: 'BRL', name: 'Premium', billingIncrement: 'P1M' },
+      ],
+      description: 'Clima em tempo real, NDVI por satélite, análise de solo e AgroAssistente com IA para pequenos e médios produtores rurais.',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://campoclima.com.br/#website',
+      url: 'https://campoclima.com.br',
+      name: 'CampoClima',
+      publisher: { '@id': 'https://campoclima.com.br/#org' },
+      inLanguage: 'pt-BR',
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'Funciona sem internet no campo?', acceptedAnswer: { '@type': 'Answer', text: 'Sim. O CampoClima é um PWA: instale no celular e os últimos dados ficam disponíveis offline. Ao voltar o sinal, tudo sincroniza automaticamente.' } },
+        { '@type': 'Question', name: 'Preciso de agrônomo para usar?', acceptedAnswer: { '@type': 'Answer', text: 'Não. O AgroAssistente traduz os dados em recomendações práticas em português simples. Para receituário de defensivos, a plataforma orienta procurar um agrônomo com CREA — a IA complementa, não substitui.' } },
+        { '@type': 'Question', name: 'Atende minha região?', acceptedAnswer: { '@type': 'Answer', text: 'Sim. Clima, satélite e solo cobrem todo o Brasil. O benchmark de produtividade usa dados do IBGE do seu município.' } },
+        { '@type': 'Question', name: 'De onde vêm os dados?', acceptedAnswer: { '@type': 'Answer', text: 'De fontes oficiais e científicas: IBGE, INPE, NASA, satélite Sentinel-2 (Copernicus/ESA) e Open-Meteo. A IA é o Claude, da Anthropic.' } },
+        { '@type': 'Question', name: 'Posso cancelar quando quiser?', acceptedAnswer: { '@type': 'Answer', text: 'Sim. A assinatura é mensal via Mercado Pago, sem fidelidade. Cancelou, continua com acesso até o fim do período pago.' } },
+      ],
+    },
+  ],
+}
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-stone-900 font-sans">
@@ -443,6 +491,11 @@ export default function LandingPage() {
       </footer>
 
       <WhatsAppButton />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </div>
   )
 }
