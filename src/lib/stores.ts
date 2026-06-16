@@ -203,3 +203,27 @@ export function readPosts(): CommunityPost[] {
 }
 
 export function writePosts(posts: CommunityPost[]): void { writeStore('community', posts) }
+
+// ── Monitoramento fitossanitário por talhão ──────────────────
+
+export interface PestObservation {
+  id: string
+  date: string          // YYYY-MM-DD
+  field: string         // talhão
+  pestId: string
+  pestName: string
+  level: number         // nível observado (contagem, %, etc.)
+  unit: string          // "por metro", "% plantas", "% desfolha"...
+  aboveThreshold: boolean // ultrapassou o nível de controle?
+  notes: string
+}
+
+export function readPestObservations(): PestObservation[] {
+  const profile = getDemoProfileClient()
+  const field1 = profile.crops[0]?.field ?? 'Talhão 1'
+  return readStore<PestObservation>('pest_obs', () => [
+    { id: 'po1', date: daysAgo(2), field: field1, pestId: 'percevejo-marrom', pestName: 'Percevejo-marrom', level: 1.5, unit: 'por metro', aboveThreshold: false, notes: 'Pano de batida — abaixo do nível de controle (2/m).' },
+  ])
+}
+
+export function writePestObservations(obs: PestObservation[]): void { writeStore('pest_obs', obs) }

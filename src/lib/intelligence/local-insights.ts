@@ -4,8 +4,10 @@ import type { Insight } from '@/types'
 import { formatBRL, type CommodityPrices } from '@/lib/finance'
 import {
   readStock, stockAlerts, readDiary, readPlans, readPriceTargets, writePriceTargets,
+  readPestObservations,
 } from '@/lib/stores'
 import { getDemoProfileClient } from '@/lib/demo-profiles'
+import { pestById } from '@/lib/pests'
 
 // ─────────────────────────────────────────────────────────────
 // Insights gerados no cliente a partir dos dados locais
@@ -17,6 +19,21 @@ export function buildLocalInsights(prices: CommodityPrices | null): Insight[] {
   if (typeof window === 'undefined') return []
   const out: Insight[] = []
   const profile = getDemoProfileClient()
+
+  // Monitoramento fitossanitário: ocorrências acima do nível de controle (P1)
+  const recentCutoff = new Date(); recentCutoff.setDate(recentCutoff.getDate() - 21)
+  for (const o of readPestObservations()) {
+    if (!o.aboveThreshold || new Date(o.date) < recentCutoff) continue
+    const pest = pestById(o.pestId)
+    out.push({
+      id: `pest-${o.id}`,
+      category: 'doenças', priority: 1, severity: 'danger',
+      title: `${o.pestName} acima do nível de controle — ${o.field}`,
+      recommendation: `${o.level} ${o.unit} registrado em ${new Date(o.date + 'T12:00').toLocaleDateString('pt-BR')}. ${pest?.controlLevel ?? 'Avalie aplicação imediata.'}`,
+      action: { label: 'Ver manejo', href: '/pragas' },
+      source: 'Monitoramento fitossanitário',
+    })
+  }
 
   // Estoque crítico / validade
   const { low, expiring } = stockAlerts(readStock())
@@ -116,6 +133,10 @@ export function localContextString(prices: CommodityPrices | null): string {
   }
   if (diary.length > 0) {
     lines.push(`📋 Últimas operações: ${diary.map(e => `${e.date} ${e.type} no ${e.field}`).join(' | ')}.`)
+  }
+  const pestObs = readPestObservations().slice(0, 5)
+  if (pestObs.length > 0) {
+    lines.push(`🐛 Monitoramento de pragas: ${pestObs.map(o => `${o.pestName} ${o.level}${o.unit ? ' ' + o.unit : ''} no ${o.field}${o.aboveThreshold ? ' (ACIMA do controle)' : ''}`).join(' | ')}.`)
   }
   if (insights.length > 0) {
     lines.push(`⚠️ Pendências locais: ${insights.map(i => i.title).join(' | ')}.`)

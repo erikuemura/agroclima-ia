@@ -7,7 +7,7 @@ import { getDemoProfileClient } from '@/lib/demo-profiles'
 import {
   Cloud, Sprout, Map, BarChart2, Droplets, FlaskConical,
   CalendarDays, FileText, Settings, Leaf, Bot, X, Wallet,
-  ClipboardList, Package, Target, Users, Briefcase,
+  ClipboardList, Package, Target, Users, Briefcase, Bug,
 } from 'lucide-react'
 
 const nav = [
@@ -25,6 +25,7 @@ const nav = [
     section: 'Operação',
     items: [
       { href: '/diario', label: 'Diário de campo', icon: ClipboardList },
+      { href: '/pragas', label: 'Pragas & doenças', icon: Bug },
       { href: '/estoque', label: 'Estoque', icon: Package },
       { href: '/pulverizacao', label: 'Pulverização', icon: Sprout, dot: 'success' },
       { href: '/irrigacao', label: 'Irrigação', icon: Droplets },

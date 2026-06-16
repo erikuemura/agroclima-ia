@@ -6,6 +6,7 @@ import { stormInsights, sortInsights } from '../insights'
 import { lossFromWaterDeficit, formatBRL, matchCommodity, revenueEstimate } from '@/lib/finance'
 import { estimateAiCostBRL } from '@/lib/server-events'
 import { limingNeed, plantingRate, harvestValue } from '@/lib/agro-calc'
+import { pestsForCrop, searchPests, pestsRelevantNow, pestById, PESTS } from '@/lib/pests'
 import type { WeatherCurrent, WeatherDay, Crop } from '@/types'
 
 const sojaFloracao: Crop = {
@@ -179,5 +180,46 @@ describe('cálculos agronômicos (ferramentas públicas)', () => {
     expect(r.totalBags).toBe(6000)
     expect(r.grossValue).toBe(720_000)
     expect(r.perHa).toBe(7200)
+  })
+})
+
+describe('base de conhecimento de pragas', () => {
+  it('filtra pragas por cultura (soja inclui ferrugem e percevejo)', () => {
+    const soja = pestsForCrop('Soja safra 25/26')
+    const ids = soja.map(p => p.id)
+    expect(ids).toContain('ferrugem-asiatica')
+    expect(ids).toContain('percevejo-marrom')
+    expect(ids).not.toContain('bicudo-algodoeiro') // praga de algodão
+  })
+
+  it('milho inclui cigarrinha e lagarta-do-cartucho', () => {
+    const ids = pestsForCrop('Milho 2ª safra').map(p => p.id)
+    expect(ids).toContain('cigarrinha-milho')
+    expect(ids).toContain('lagarta-cartucho')
+  })
+
+  it('busca por sintoma encontra a praga certa', () => {
+    const r = searchPests('micélio branco', 'Soja')
+    expect(r.map(p => p.id)).toContain('mofo-branco')
+  })
+
+  it('prioriza pragas pela fase fenológica', () => {
+    // soja em enchimento de grãos → percevejo é suscetível
+    const r = pestsRelevantNow('Soja safra 25/26', 'Enchimento de grãos')
+    expect(r.map(p => p.id)).toContain('percevejo-marrom')
+  })
+
+  it('todas as pragas têm manejo integrado completo', () => {
+    for (const p of PESTS) {
+      expect(p.management.cultural.length).toBeGreaterThan(0)
+      expect(p.management.biological.length).toBeGreaterThan(0)
+      expect(p.management.chemical.length).toBeGreaterThan(0)
+      expect(p.controlLevel.length).toBeGreaterThan(10)
+    }
+  })
+
+  it('pestById retorna a praga e undefined para id inexistente', () => {
+    expect(pestById('ferrugem-asiatica')?.name).toBe('Ferrugem asiática')
+    expect(pestById('inexistente')).toBeUndefined()
   })
 })
