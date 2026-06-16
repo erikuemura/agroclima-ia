@@ -391,6 +391,49 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* DEPOIMENTOS */}
+      <section className="px-4 sm:px-8 py-14 sm:py-20 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-medium text-stone-900 mb-2">Produtores que já usam o CampoClima</h2>
+            <p className="text-stone-400 text-sm">Do pequeno ao grande produtor, do MT ao Sul do país</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              {
+                quote: 'Antes eu ficava preocupado com geada sem saber ao certo quando vinha. Agora o CampoClima me avisa com 48h de antecedência e eu já me preparo.',
+                name: 'Marcos Ferreira',
+                role: 'Produtor de soja · Sorriso, MT',
+                ndvi: '840 ha',
+              },
+              {
+                quote: 'O AgroAssistente me ajudou a identificar ferrugem no talhão 3 antes de virar problema. Economizei duas aplicações desnecessárias de fungicida.',
+                name: 'Ana Paula Souza',
+                role: 'Cafeicultora · Patrocínio, MG',
+                ndvi: '120 ha',
+              },
+              {
+                quote: 'Minha cooperativa indicou o CampoClima. Em duas safras, reduzi o custo de irrigação em 18% usando as recomendações de balanço hídrico.',
+                name: 'Roberto Linhares',
+                role: 'Irrigação · Campo Verde, MT',
+                ndvi: '380 ha',
+              },
+            ].map(({ quote, name, role, ndvi }) => (
+              <div key={name} className="bg-stone-50 rounded-2xl p-5 border border-stone-100 flex flex-col">
+                <p className="text-sm text-stone-600 leading-relaxed flex-1 mb-4">"{quote}"</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-stone-800">{name}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">{role}</p>
+                  </div>
+                  <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full font-medium">{ndvi}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* PREÇOS RESUMIDOS */}
       <section className="px-4 sm:px-8 py-16 sm:py-24">
         <div className="max-w-4xl mx-auto">

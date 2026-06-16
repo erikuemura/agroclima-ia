@@ -328,8 +328,8 @@ export default function PrecosPage() {
         </div>
         <p className="text-xs text-stone-400">© 2026 CampoClima</p>
         <div className="flex gap-5">
-          {['Privacidade', 'Termos', 'Contato'].map(l => (
-            <Link key={l} href="#" className="text-xs text-stone-400 hover:text-stone-600">{l}</Link>
+          {[['Privacidade', '/privacidade'], ['Termos', '/termos'], ['Contato', 'mailto:contato@campoclima.com.br']].map(([l, href]) => (
+            <Link key={l} href={href} className="text-xs text-stone-400 hover:text-stone-600">{l}</Link>
           ))}
         </div>
       </footer>
