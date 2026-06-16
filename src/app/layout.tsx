@@ -47,6 +47,9 @@ export const metadata: Metadata = {
     images: ["/api/og"],
   },
   robots: { index: true, follow: true },
+  ...(process.env.GOOGLE_SITE_VERIFICATION && {
+    verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
+  }),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
