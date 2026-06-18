@@ -4,6 +4,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -47,6 +48,10 @@ export const metadata: Metadata = {
     images: ["/api/og"],
   },
   robots: { index: true, follow: true },
+  // Verificação do Google Search Console — cole o código em NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -65,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <Analytics />
         <SpeedInsights />
+        <GoogleAnalytics />
       </body>
     </html>
   );
