@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ToolShell } from '@/components/site/ToolShell'
+import { ToolJsonLd } from '@/components/site/JsonLd'
 import { PopulacaoTool } from '@/components/tools/PopulacaoTool'
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function Page() {
       title="População de plantas e sementes"
       subtitle="Quantas sementes plantar por metro e por hectare? Calcule descontando germinação e emergência, para soja, milho, algodão e feijão. Grátis e sem cadastro."
     >
+      <ToolJsonLd name="Calculadora de população de plantas" description="Sementes por metro, por hectare e kg/ha descontando germinação." path="/ferramentas/populacao-de-plantas" />
       <PopulacaoTool />
     </ToolShell>
   )

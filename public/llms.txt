@@ -1,0 +1,30 @@
+# CampoClima
+
+> Plataforma de gestão agrícola com inteligência artificial para pequenos e médios produtores rurais brasileiros. Reúne clima em tempo real, monitoramento por satélite (NDVI), análise de solo, controle de pragas, gestão financeira e um assistente agrônomo virtual (AgroAssistente).
+
+CampoClima é um SaaS web (PWA, funciona offline) que usa dados oficiais e científicos — IBGE, INPE, NASA POWER, satélite Sentinel-2 (Copernicus/ESA), Open-Meteo — e o modelo de IA Claude (Anthropic). Atende todo o Brasil. Planos: Gratuito, Produtor (R$49/mês) e Premium (R$129/mês).
+
+## Ferramentas gratuitas (sem cadastro)
+
+- [Previsão do tempo agrícola](https://campoclima.com.br/ferramentas/previsao-do-tempo): previsão de 7 dias por município, janela de pulverização e chuva acumulada.
+- [Quanto vale minha safra](https://campoclima.com.br/ferramentas/valor-da-safra): valor bruto da produção (soja, milho, boi) pela cotação do dia × produtividade × área.
+- [Calculadora de calagem](https://campoclima.com.br/ferramentas/calagem): necessidade de calcário (t/ha) pelo método da saturação por bases.
+- [Calculadora de população de plantas](https://campoclima.com.br/ferramentas/populacao-de-plantas): sementes por metro, por hectare e kg/ha.
+
+## Principais
+
+- [Página inicial](https://campoclima.com.br/): visão geral do produto.
+- [Demonstração ao vivo](https://campoclima.com.br/demo): experimente a plataforma com fazendas de exemplo, sem cadastro.
+- [Planos e preços](https://campoclima.com.br/precos): comparativo dos planos.
+- [Ferramentas grátis](https://campoclima.com.br/ferramentas): hub das calculadoras agrícolas.
+
+## Recursos da plataforma
+
+- Clima e previsão de 10 dias com alertas por IA (geada, vendaval, déficit hídrico, janela de pulverização)
+- NDVI e zonas de produtividade por satélite (Sentinel-2)
+- Análise de solo com laudo por IA
+- Controle de pragas e doenças: biblioteca, diagnóstico, monitoramento por talhão e alertas
+- Balanço hídrico e recomendação de irrigação (FAO-56)
+- Gestão financeira: cotações, custos por talhão, simulador de venda, preço-alvo
+- Diário de campo, estoque de insumos e planejamento de safra
+- AgroAssistente: chat com IA que conhece o contexto da fazenda e analisa fotos da lavoura

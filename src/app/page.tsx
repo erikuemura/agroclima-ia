@@ -3,16 +3,28 @@ import Link from 'next/link'
 import { Leaf, ArrowRight, Play, ShieldCheck, Clock, Smartphone, Brain, Check } from 'lucide-react'
 import { LeadCapture } from '@/components/site/LeadCapture'
 import { WhatsAppButton } from '@/components/site/WhatsAppButton'
+import { OrganizationJsonLd, FaqJsonLd } from '@/components/site/JsonLd'
+
+const FAQ = [
+  { q: 'Funciona sem internet no campo?', a: 'Sim. O CampoClima é um PWA: instale no celular e os últimos dados ficam disponíveis offline. Ao voltar o sinal, tudo sincroniza automaticamente.' },
+  { q: 'Preciso de agrônomo para usar?', a: 'Não. O AgroAssistente traduz os dados em recomendações práticas em português simples. Para receituário de defensivos, a plataforma orienta procurar um agrônomo com CREA — a IA complementa, não substitui.' },
+  { q: 'Atende minha região?', a: 'Sim. Clima, satélite e solo cobrem todo o Brasil. O benchmark de produtividade usa dados do IBGE do seu município.' },
+  { q: 'De onde vêm os dados?', a: 'De fontes oficiais e científicas: IBGE, INPE, NASA, satélite Sentinel-2 (Copernicus/ESA) e Open-Meteo. A IA é o Claude, da Anthropic.' },
+  { q: 'Posso cancelar quando quiser?', a: 'Sim. A assinatura é mensal via Mercado Pago, sem fidelidade. Cancelou, continua com acesso até o fim do período pago.' },
+]
 
 export const metadata: Metadata = {
   title: 'CampoClima — Inteligência para o campo',
   description: 'Plataforma agro com IA para pequenos e médios produtores rurais. Clima em tempo real, NDVI por satélite, análise de solo e AgroAssistente.',
+  alternates: { canonical: '/' },
   openGraph: { url: '/' },
 }
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-stone-900 font-sans">
+      <OrganizationJsonLd />
+      <FaqJsonLd items={FAQ} />
       {/* NAV */}
       <nav className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-stone-100 sticky top-0 bg-white/95 backdrop-blur z-50">
         <div className="flex items-center gap-2.5">
@@ -379,13 +391,7 @@ export default function LandingPage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-medium text-stone-900 text-center mb-8">Perguntas frequentes</h2>
           <div className="space-y-3">
-            {[
-              { q: 'Funciona sem internet no campo?', a: 'Sim. O CampoClima é um PWA: instale no celular e os últimos dados ficam disponíveis offline. Ao voltar o sinal, tudo sincroniza automaticamente.' },
-              { q: 'Preciso de agrônomo para usar?', a: 'Não. O AgroAssistente traduz os dados em recomendações práticas em português simples. Para receituário de defensivos, a plataforma orienta procurar um agrônomo com CREA — a IA complementa, não substitui.' },
-              { q: 'Atende minha região?', a: 'Sim. Clima, satélite e solo cobrem todo o Brasil. O benchmark de produtividade usa dados do IBGE do seu município.' },
-              { q: 'De onde vêm os dados?', a: 'De fontes oficiais e científicas: IBGE, INPE, NASA, satélite Sentinel-2 (Copernicus/ESA) e Open-Meteo. A IA é o Claude, da Anthropic.' },
-              { q: 'Posso cancelar quando quiser?', a: 'Sim. A assinatura é mensal via Mercado Pago, sem fidelidade. Cancelou, continua com acesso até o fim do período pago.' },
-            ].map(({ q, a }) => (
+            {FAQ.map(({ q, a }) => (
               <details key={q} className="group bg-white border border-stone-200 rounded-xl px-5 py-4">
                 <summary className="text-sm font-medium text-stone-800 cursor-pointer list-none flex items-center justify-between">
                   {q}

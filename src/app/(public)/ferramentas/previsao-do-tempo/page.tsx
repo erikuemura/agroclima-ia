@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ToolShell } from '@/components/site/ToolShell'
+import { ToolJsonLd } from '@/components/site/JsonLd'
 import { PrevisaoTool } from '@/components/tools/PrevisaoTool'
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function Page() {
       title="Previsão do tempo agrícola"
       subtitle="Previsão de 7 dias para o seu município, com janela de pulverização e chuva acumulada — feita para quem trabalha no campo. Grátis e sem cadastro."
     >
+      <ToolJsonLd name="Previsão do tempo agrícola" description="Previsão de 7 dias por município com janela de pulverização e chuva acumulada." path="/ferramentas/previsao-do-tempo" />
       <PrevisaoTool />
     </ToolShell>
   )

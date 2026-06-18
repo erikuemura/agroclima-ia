@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ToolShell } from '@/components/site/ToolShell'
+import { ToolJsonLd } from '@/components/site/JsonLd'
 import { CalagemTool } from '@/components/tools/CalagemTool'
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function Page() {
       title="Calculadora de calagem"
       subtitle="Quanto de calcário aplicar para corrigir o pH do solo? Calcule pela saturação por bases a partir da sua análise de solo. Grátis e sem cadastro."
     >
+      <ToolJsonLd name="Calculadora de calagem" description="Necessidade de calcário (t/ha) pela saturação por bases." path="/ferramentas/calagem" />
       <CalagemTool />
     </ToolShell>
   )

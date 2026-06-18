@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ToolShell } from '@/components/site/ToolShell'
+import { ToolJsonLd } from '@/components/site/JsonLd'
 import { ValorSafraTool } from '@/components/tools/ValorSafraTool'
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function Page() {
       title="Quanto vale minha safra?"
       subtitle="Calcule o valor bruto da sua produção com a cotação do dia, sua produtividade e área. Soja, milho e boi gordo. Grátis e sem cadastro."
     >
+      <ToolJsonLd name="Quanto vale minha safra" description="Calcule o valor bruto da produção com a cotação do dia, produtividade e área." path="/ferramentas/valor-da-safra" />
       <ValorSafraTool />
     </ToolShell>
   )
